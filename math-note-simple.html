@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数学ノート</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#e9e4da;color:#30383d;font-family:Arial,"Noto Sans JP",sans-serif}
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+
+.hidden{display:none!important}
+
+/* login */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{width:min(380px,100%);background:#fffdf8;border:1px solid #d8d1c5;border-left:4px solid #555f65;padding:30px;box-shadow:0 8px 30px #0002}
+.login-card h1{font-family:Georgia,"Noto Serif JP",serif;text-align:center;margin:0 0 8px;font-size:29px}
+.login-card p{text-align:center;color:#777;margin:0 0 22px;font-size:13px}
+.roles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.roles button{background:#fff;border:1px solid #cfd5d8;padding:10px}
+.roles button.active{background:#eef2f3;border-color:#555f65;font-weight:bold}
+.login-card input{width:100%;padding:10px;border:1px solid #cfd5d8}
+.enter{width:100%;padding:10px;margin-top:10px;background:#555f65;color:#fff;border:0}
+.error{color:#b84d4d!important;margin-top:10px!important}
+
+/* notebook */
+.book{max-width:1050px;min-height:calc(100vh - 40px);margin:20px auto;background:#fffdf8;border:1px solid #ddd5c8;box-shadow:0 7px 30px #0002}
+header{padding:25px 30px 20px;border-bottom:1px solid #dce1e3;position:relative}
+header h1{font:700 32px Georgia,"Noto Serif JP",serif;margin:0}
+header p{font-size:13px;color:#777;margin:6px 0 0}
+.user{position:absolute;right:25px;top:25px;display:flex;align-items:center;gap:8px}
+.badge{font-size:11px;border:1px solid #cfd5d8;padding:4px 8px}
+.logout{background:#fff;border:1px solid #cfd5d8;padding:6px 10px}
+
+nav{display:flex;gap:4px;padding:10px 20px;border-bottom:1px solid #dce1e3;overflow:auto}
+nav button{border:0;background:none;color:#777;padding:8px 11px;white-space:nowrap}
+nav button.active{color:#30383d;font-weight:bold;border-bottom:2px solid #555f65}
+
+main{padding:30px}
+.note{border-left:3px solid #555f65;padding-left:18px;margin-bottom:30px}
+.note .date{font-size:12px;color:#888}
+.note h2{font:700 22px Georgia,"Noto Serif JP",serif;margin:5px 0}
+.note p{white-space:pre-wrap;line-height:1.8;margin:0}
+
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.card{background:#fff;border:1px solid #d8dfe1;padding:22px;min-height:135px}
+.card h2{font:700 20px Georgia,"Noto Serif JP",serif;margin:0 0 9px}
+.card p{font-size:13px;color:#777;line-height:1.7;margin:0}
+.open{margin-top:15px;background:#fff;border:1px solid #555f65;padding:7px 13px;color:#30383d}
+.state{float:right;font-size:11px;color:#777}
+
+h2.section{font:700 25px Georgia,"Noto Serif JP",serif}
+.panel{background:#fff;border:1px solid #d8dfe1;padding:20px;margin-bottom:18px}
+.notice{background:#f5f2eb;border-left:3px solid #777;padding:13px;font-size:13px;line-height:1.7}
+.back{border:0;background:none;color:#555f65;padding:0;margin-bottom:15px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px;border-bottom:1px solid #dce1e3;text-align:left;font-size:13px}
+.toggle{background:#fff;border:1px solid #cfd5d8;padding:6px 10px}
+.field{margin:12px 0}
+.field label{display:block;font-size:12px;color:#777;margin-bottom:4px}
+.field input,.field textarea{width:100%;padding:9px;border:1px solid #cfd5d8}
+.field textarea{min-height:110px;resize:vertical}
+.save{background:#555f65;color:#fff;border:0;padding:9px 15px}
+.sim{background:#fff;border:1px solid #d8dfe1;padding:20px}
+.sim input{width:100%}
+canvas{width:100%;height:280px;border:1px solid #ddd;background:#fafafa}
+
+@media(max-width:650px){
+ .book{margin:0;min-height:100vh}
+ header{padding:20px}
+ .user{position:static;margin-top:12px}
+ main{padding:18px}
+ .grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+
+<section id="login" class="login">
+ <div class="login-card">
+  <h1>数学ノート</h1>
+  <p>授業・教材をまとめています</p>
+
+  <div class="roles">
+   <button id="hostBtn">ホスト</button>
+   <button id="guestBtn" class="active">ゲスト</button>
+  </div>
+
+  <input id="hostPassword" class="hidden" type="password" placeholder="ホストパスワード">
+  <button id="enterBtn" class="enter">入室</button>
+  <p id="error" class="error"></p>
+ </div>
+</section>
+
+<div id="site" class="hidden">
+ <div class="book">
+
+  <header>
+   <h1>数学ノート</h1>
+   <p>授業・教材をまとめています。</p>
+
+   <div class="user">
+    <span id="roleBadge" class="badge"></span>
+    <button id="logout" class="logout">退出</button>
+   </div>
+  </header>
+
+  <nav id="nav"></nav>
+
+  <main id="main"></main>
+
+ </div>
+</div>
+
+<script>
+const HOST_PASSWORD = "math-host-2026";
+
+const DEFAULT_ITEMS = [
+ {id:"sim",title:"シミュレータ",description:"数学のシミュレータをまとめます。",visible:true},
+ {id:"akapen",title:"赤ペンノート",description:"問題を解いて、答え合わせや復習をします。",visible:true},
+ {id:"practice",title:"練習問題",description:"授業内容に合わせた練習問題をまとめます。",visible:true},
+ {id:"resources",title:"資料",description:"授業資料や参考資料をまとめます。",visible:true}
+];
+
+let data;
+try{
+ data=JSON.parse(localStorage.getItem("math_note_simple"));
+}catch(e){data=null}
+
+if(!data){
+ data={
+  items:DEFAULT_ITEMS,
+  note:{
+   date:new Date().toLocaleDateString("ja-JP"),
+   title:"今日の授業",
+   body:"ここに先生のメモを表示できます。"
+  }
+ };
+}
+
+let role="";
+let page="home";
+
+const $=id=>document.getElementById(id);
+
+function save(){
+ localStorage.setItem("math_note_simple",JSON.stringify(data));
+}
+
+function escapeHTML(value){
+ return String(value ?? "").replace(/[&<>"']/g,m=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[m]));
+}
+
+function visibleItems(){
+ return data.items.filter(item=>item.visible);
+}
+
+$("hostBtn").onclick=()=>{
+ role="host";
+ $("hostBtn").classList.add("active");
+ $("guestBtn").classList.remove("active");
+ $("hostPassword").classList.remove("hidden");
+ $("error").textContent="";
+};
+
+$("guestBtn").onclick=()=>{
+ role="guest";
+ $("guestBtn").classList.add("active");
+ $("hostBtn").classList.remove("active");
+ $("hostPassword").classList.add("hidden");
+ $("error").textContent="";
+};
+
+$("enterBtn").onclick=()=>{
+ if(role==="host" && $("hostPassword").value!==HOST_PASSWORD){
+  $("error").textContent="ホストパスワードが違います";
+  return;
+ }
+
+ role=role||"guest";
+ sessionStorage.setItem("math_note_role",role);
+ start();
+};
+
+$("logout").onclick=()=>{
+ sessionStorage.removeItem("math_note_role");
+ location.reload();
+};
+
+function start(){
+ $("login").classList.add("hidden");
+ $("site").classList.remove("hidden");
+ $("roleBadge").textContent=role==="host"?"HOST":"GUEST";
+ renderNav();
+ render();
+}
+
+function go(nextPage){
+ page=nextPage;
+ renderNav();
+ render();
+ window.scrollTo(0,0);
+}
+
+function renderNav(){
+ let html=`<button class="${page==="home"?"active":""}" onclick="go('home')">ホーム</button>`;
+
+ visibleItems().forEach(item=>{
+  html+=`<button class="${page===item.id?"active":""}" onclick="go('${item.id}')">${item.title}</button>`;
+ });
+
+ if(role==="host"){
+  html+=`<button class="${page==="admin"?"active":""}" onclick="go('admin')">管理</button>`;
+ }
+
+ $("nav").innerHTML=html;
+}
+
+function render(){
+ if(page==="home") renderHome();
+ else if(page==="admin" && role==="host") renderAdmin();
+ else if(page==="sim") renderSimulator();
+ else if(page==="akapen") renderAkapen();
+ else if(page==="practice") renderPractice();
+ else if(page==="resources") renderResources();
+}
+
+function renderHome(){
+ const note=data.note;
+
+ $("main").innerHTML=`
+  <div class="note">
+   <div class="date">${escapeHTML(note.date)}</div>
+   <h2>${escapeHTML(note.title)}</h2>
+   <p>${escapeHTML(note.body)}</p>
+  </div>
+
+  <h2 class="section">教材</h2>
+
+  <div class="grid">
+   ${visibleItems().map(item=>`
+    <div class="card">
+     <span class="state">公開</span>
+     <h2>${item.title}</h2>
+     <p>${item.description}</p>
+     <button class="open" onclick="go('${item.id}')">開く</button>
+    </div>
+   `).join("")}
+  </div>
+ `;
+}
+
+function renderAdmin(){
+ $("main").innerHTML=`
+  <h2 class="section">管理</h2>
+
+  <div class="panel">
+   <h3>公開設定</h3>
+
+   <table>
+    <tr>
+     <th>教材</th>
+     <th>状態</th>
+     <th>操作</th>
+    </tr>
+
+    ${data.items.map(item=>`
+     <tr>
+      <td>${item.title}</td>
+      <td>${item.visible?"公開":"非公開"}</td>
+      <td>
+       <button class="toggle" onclick="toggleItem('${item.id}')">
+        ${item.visible?"非公開にする":"公開する"}
+       </button>
+      </td>
+     </tr>
+    `).join("")}
+   </table>
+  </div>
+
+  <div class="panel">
+   <h3>今日のメモ</h3>
+
+   <div class="field">
+    <label>日付</label>
+    <input id="noteDate" value="${escapeHTML(data.note.date)}">
+   </div>
+
+   <div class="field">
+    <label>タイトル</label>
+    <input id="noteTitle" value="${escapeHTML(data.note.title)}">
+   </div>
+
+   <div class="field">
+    <label>コメント</label>
+    <textarea id="noteBody">${escapeHTML(data.note.body)}</textarea>
+   </div>
+
+   <button class="save" onclick="saveNote()">保存</button>
+  </div>
+
+  <div class="notice">
+   現在はこのブラウザ内に保存する試作版です。
+   GitHub Pagesで先生の変更を生徒全員へ共有するには、後でFirebaseなどのデータベースを接続します。
+  </div>
+ `;
+}
+
+function toggleItem(id){
+ data.items=data.items.map(item=>
+  item.id===id ? {...item,visible:!item.visible} : item
+ );
+ save();
+ renderNav();
+ render();
+}
+
+function saveNote(){
+ data.note={
+  date:$("noteDate").value,
+  title:$("noteTitle").value,
+  body:$("noteBody").value
+ };
+ save();
+ render();
+}
+
+function renderSimulator(){
+ $("main").innerHTML=`
+  <button class="back" onclick="go('home')">← 戻る</button>
+  <h2 class="section">シミュレータ</h2>
+
+  <div class="sim">
+   <h3>二次関数</h3>
+   <p>y = ax² の a を変化させます。</p>
+
+   <input id="coefficient" type="range" min="-3" max="3" step="0.1" value="1">
+   <div id="coefficientText">a = 1.0</div>
+
+   <canvas id="graph" width="900" height="320"></canvas>
+  </div>
+ `;
+
+ const range=$("coefficient");
+ const text=$("coefficientText");
+ const canvas=$("graph");
+ const ctx=canvas.getContext("2d");
+
+ function draw(){
+  const a=Number(range.value);
+
+  text.textContent="a = "+a.toFixed(1);
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  ctx.beginPath();
+  ctx.moveTo(450,0);
+  ctx.lineTo(450,320);
+  ctx.moveTo(0,160);
+  ctx.lineTo(900,160);
+  ctx.stroke();
+
+  ctx.beginPath();
+
+  let first=true;
+
+  for(let px=0;px<=900;px++){
+   const x=(px-450)/45;
+   const y=160-a*x*x*18;
+
+   if(y<0 || y>320){
+    first=true;
+    continue;
+   }
+
+   if(first){
+    ctx.moveTo(px,y);
+    first=false;
+   }else{
+    ctx.lineTo(px,y);
+   }
+  }
+
+  ctx.stroke();
+ }
+
+ range.oninput=draw;
+ draw();
+}
+
+function renderAkapen(){
+ $("main").innerHTML=`
+  <button class="back" onclick="go('home')">← 戻る</button>
+  <h2 class="section">赤ペンノート</h2>
+
+  <div class="panel">
+   <h3>問題</h3>
+   <p>x² − 5x + 6 = 0 を解きなさい。</p>
+
+   <input id="answer" style="width:100%;padding:9px;border:1px solid #cfd5d8"
+          placeholder="答えを入力">
+
+   <button class="save" style="margin-top:10px" onclick="checkAnswer()">答え合わせ</button>
+
+   <p id="result"></p>
+  </div>
+ `;
+
+ $("answer").focus();
+}
+
+function checkAnswer(){
+ const answer=$("answer").value.replace(/\s/g,"");
+
+ $("result").textContent=
+  answer.includes("2") && answer.includes("3")
+  ? "正解です。x = 2, 3"
+  : "もう一度確認してみましょう。";
+}
+
+function renderPractice(){
+ $("main").innerHTML=`
+  <button class="back" onclick="go('home')">← 戻る</button>
+  <h2 class="section">練習問題</h2>
+
+  <div class="panel">
+   <p>ここに授業用の練習問題を追加できます。</p>
+  </div>
+ `;
+}
+
+function renderResources(){
+ $("main").innerHTML=`
+  <button class="back" onclick="go('home')">← 戻る</button>
+  <h2 class="section">資料</h2>
+
+  <div class="panel">
+   <p>ここに授業資料や参考資料を追加できます。</p>
+  </div>
+ `;
+}
+
+const savedRole=sessionStorage.getItem("math_note_role");
+
+if(savedRole){
+ role=savedRole;
+ start();
+}
+</script>
+
+</body>
+</html>
