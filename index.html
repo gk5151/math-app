@@ -3,593 +3,88 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>勉強ノート</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<title>数学ノート</title>
 <style>
-* { box-sizing: border-box; }
-
-:root {
-  --paper: #fffdf8;
-  --paper-bg: #e9e4da;
-  --ink: #30383d;
-  --ink-soft: #777;
-  --border: #ddd5c8;
-  --line: #dce1e3;
-  --accent: #555f65;
-  --accent-soft: #eef2f3;
-  --red: #c0574a;
-}
-
-html, body {
-  margin: 0;
-  min-height: 100%;
-  background: var(--paper-bg);
-  color: var(--ink);
-  font-family: Arial, "Noto Sans JP", sans-serif;
-}
-
-button, input, textarea, select {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
-.hidden {
-  display: none !important;
-}
-
-/* ===== LOGIN ===== */
-.login {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.login-card {
-  width: min(380px, 100%);
-  background: var(--paper);
-  border: 1px solid #d8d1c5;
-  border-left: 4px solid var(--accent);
-  padding: 30px;
-  box-shadow: 0 8px 30px #0002;
-}
-
-.login-card h1 {
-  font-family: Georgia, "Noto Serif JP", serif;
-  text-align: center;
-  margin: 0 0 8px;
-  font-size: 29px;
-}
-
-.login-card p {
-  text-align: center;
-  color: var(--ink-soft);
-  margin: 0 0 22px;
-  font-size: 13px;
-}
-
-.login-card h3 {
-  margin: 0 0 10px;
-  font-size: 14px;
-  color: var(--ink);
-}
-
-.subject-select {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 15px;
-}
-
-.subject-select button {
-  background: #fff;
-  border: 1px solid #cfd5d8;
-  padding: 10px;
-  font-size: 14px;
-}
-
-.subject-select button.active {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  font-weight: bold;
-}
-
-.roles {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.roles button {
-  background: #fff;
-  border: 1px solid #cfd5d8;
-  padding: 10px;
-}
-
-.roles button.active {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  font-weight: bold;
-}
-
-.login-card input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #cfd5d8;
-  margin-bottom: 10px;
-}
-
-.enter {
-  width: 100%;
-  padding: 10px;
-  background: var(--accent);
-  color: #fff;
-  border: 0;
-  margin-bottom: 10px;
-}
-
-.error {
-  color: var(--red) !important;
-  margin-top: 10px !important;
-}
-
-/* ===== NOTEBOOK ===== */
-.book {
-  max-width: 1050px;
-  min-height: calc(100vh - 40px);
-  margin: 20px auto;
-  background: var(--paper);
-  border: 1px solid var(--border);
-  box-shadow: 0 7px 30px #0002;
-}
-
-header {
-  padding: 25px 30px 20px;
-  border-bottom: 1px solid var(--line);
-  position: relative;
-}
-
-header h1 {
-  font: 700 32px Georgia, "Noto Serif JP", serif;
-  margin: 0;
-}
-
-header p {
-  font-size: 13px;
-  color: var(--ink-soft);
-  margin: 6px 0 0;
-}
-
-.user {
-  position: absolute;
-  right: 25px;
-  top: 25px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.badge {
-  font-size: 11px;
-  border: 1px solid #cfd5d8;
-  padding: 4px 8px;
-}
-
-.subject-badge {
-  font-size: 11px;
-  border: 1px solid #cfd5d8;
-  padding: 4px 8px;
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  font-weight: bold;
-}
-
-.change-subject-btn {
-  background: #fff;
-  border: 1px solid #cfd5d8;
-  padding: 6px 10px;
-  font-size: 11px;
-}
-
-.logout {
-  background: #fff;
-  border: 1px solid #cfd5d8;
-  padding: 6px 10px;
-}
-
-nav {
-  display: flex;
-  gap: 4px;
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--line);
-  overflow: auto;
-}
-
-nav button {
-  border: 0;
-  background: none;
-  color: var(--ink-soft);
-  padding: 8px 11px;
-  white-space: nowrap;
-}
-
-nav button.active {
-  color: var(--ink);
-  font-weight: bold;
-  border-bottom: 2px solid var(--accent);
-}
-
-main {
-  padding: 30px;
-}
-
-.note {
-  border-left: 3px solid var(--accent);
-  padding-left: 18px;
-  margin-bottom: 30px;
-}
-
-.note .date {
-  font-size: 12px;
-  color: #888;
-}
-
-.note h2 {
-  font: 700 22px Georgia, "Noto Serif JP", serif;
-  margin: 5px 0;
-}
-
-.note p {
-  white-space: pre-wrap;
-  line-height: 1.8;
-  margin: 0;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.card {
-  background: #fff;
-  border: 1px solid #d8dfe1;
-  padding: 22px;
-  min-height: 135px;
-}
-
-.card h2 {
-  font: 700 20px Georgia, "Noto Serif JP", serif;
-  margin: 0 0 9px;
-}
-
-.card p {
-  font-size: 13px;
-  color: var(--ink-soft);
-  line-height: 1.7;
-  margin: 0;
-}
-
-.open {
-  margin-top: 15px;
-  background: #fff;
-  border: 1px solid var(--accent);
-  padding: 7px 13px;
-  color: var(--ink);
-}
-
-h2.section {
-  font: 700 25px Georgia, "Noto Serif JP", serif;
-}
-
-.panel {
-  background: #fff;
-  border: 1px solid #d8dfe1;
-  padding: 20px;
-  margin-bottom: 18px;
-}
-
-.notice {
-  background: #f5f2eb;
-  border-left: 3px solid var(--ink-soft);
-  padding: 13px;
-  font-size: 13px;
-  line-height: 1.7;
-}
-
-.back {
-  border: 0;
-  background: none;
-  color: var(--accent);
-  padding: 0;
-  margin-bottom: 15px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th, td {
-  padding: 10px;
-  border-bottom: 1px solid var(--line);
-  text-align: left;
-  font-size: 13px;
-}
-
-.toggle {
-  background: #fff;
-  border: 1px solid #cfd5d8;
-  padding: 6px 10px;
-}
-
-.field {
-  margin: 12px 0;
-}
-
-.field label {
-  display: block;
-  font-size: 12px;
-  color: var(--ink-soft);
-  margin-bottom: 4px;
-}
-
-.field input, .field textarea, .field select {
-  width: 100%;
-  padding: 9px;
-  border: 1px solid #cfd5d8;
-}
-
-.field textarea {
-  min-height: 110px;
-  resize: vertical;
-}
-
-.save {
-  background: var(--accent);
-  color: #fff;
-  border: 0;
-  padding: 9px 15px;
-}
-
-/* ===== SIMULATOR ===== */
-.sim {
-  background: #fff;
-  border: 1px solid #d8dfe1;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-.sim h3 {
-  margin-top: 0;
-}
-
-.sim input[type="range"] {
-  width: 100%;
-  margin: 10px 0;
-}
-
-.sim iframe {
-  width: 100%;
-  height: 500px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-canvas {
-  width: 100%;
-  height: 280px;
-  border: 1px solid #ddd;
-  background: #fafafa;
-  display: block;
-  margin: 10px 0;
-}
-
-/* ===== FORMULAS ===== */
-.formula-card {
-  background: #fff;
-  border: 1.5px solid var(--ink);
-  border-left: 4px solid var(--red);
-  border-radius: 2px 8px 8px 2px;
-  padding: 12px 14px 13px;
-  box-shadow: 0 1px 0 rgba(32,40,31,0.06);
-  cursor: pointer;
-  transition: transform .12s ease, box-shadow .12s ease;
-  margin-bottom: 10px;
-}
-
-.formula-card:hover {
-  transform: translate(1px, -1px);
-  box-shadow: 2px 3px 0 #d9d2bc;
-}
-
-.formula-card .name {
-  font-family: 'Noto Serif JP', serif;
-  font-weight: 700;
-  font-size: .86rem;
-  margin: 0 0 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-
-.formula-card .name .plus {
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--ink-soft);
-  font-size: .9rem;
-  transition: transform .15s ease;
-  flex: none;
-}
-
-.formula-card.open .name .plus {
-  transform: rotate(45deg);
-  color: var(--accent);
-}
-
-.formula-tex {
-  font-size: 1.02rem;
-  overflow-x: auto;
-  padding: 4px 0 2px;
-}
-
-.formula-details {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height .25s ease;
-}
-
-.formula-card.open .formula-details {
-  max-height: 700px;
-}
-
-.formula-inner {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px dashed #d9d2bc;
-  font-size: .85rem;
-  line-height: 1.7;
-}
-
-/* ===== RESOURCES ===== */
-.resource-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.resource-item {
-  background: #fff;
-  border: 1px solid #d8dfe1;
-  padding: 15px;
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.resource-info h3 {
-  margin: 0 0 5px;
-  font-size: 16px;
-}
-
-.resource-info p {
-  margin: 0;
-  font-size: 12px;
-  color: var(--ink-soft);
-}
-
-.resource-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.resource-actions button {
-  font-size: 12px;
-  padding: 6px 10px;
-  border: 1px solid #cfd5d8;
-  background: #fff;
-}
-
-.resource-actions .delete-btn {
-  border-color: var(--red);
-  color: var(--red);
-}
-
-/* ===== FILE UPLOAD ===== */
-.file-input-wrapper {
-  position: relative;
-  overflow: hidden;
-  display: inline-block;
-  margin-bottom: 10px;
-}
-
-.file-input-wrapper input[type="file"] {
-  position: absolute;
-  left: -9999px;
-}
-
-.file-input-label {
-  display: inline-block;
-  padding: 9px 15px;
-  background: var(--accent);
-  color: #fff;
-  border: 0;
-  cursor: pointer;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.file-list {
-  list-style: none;
-  padding: 0;
-  margin: 10px 0;
-}
-
-.file-item {
-  background: #f9f9f9;
-  border: 1px solid #e0e0e0;
-  padding: 10px;
-  margin-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-radius: 4px;
-}
-
-.file-item-name {
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.file-item-actions {
-  display: flex;
-  gap: 5px;
-}
-
-.file-item-actions button {
-  font-size: 11px;
-  padding: 4px 8px;
-  border: 1px solid #cfd5d8;
-  background: #fff;
-}
-
-.delete-file-btn {
-  border-color: var(--red) !important;
-  color: var(--red) !important;
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 650px) {
-  .book {
-    margin: 0;
-    min-height: 100vh;
-  }
-
-  header {
-    padding: 20px;
-  }
-
-  .user {
-    position: static;
-    margin-top: 12px;
-  }
-
-  main {
-    padding: 18px;
-  }
-
-  .grid {
-    grid-template-columns: 1fr;
-  }
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#e9e4da;color:#30383d;font-family:Arial,"Noto Sans JP",sans-serif}
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+
+.hidden{display:none!important}
+
+/* login */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{width:min(380px,100%);background:#fffdf8;border:1px solid #d8d1c5;border-left:4px solid #555f65;padding:30px;box-shadow:0 8px 30px #0002}
+.login-card h1{font-family:Georgia,"Noto Serif JP",serif;text-align:center;margin:0 0 8px;font-size:29px}
+.login-card p{text-align:center;color:#777;margin:0 0 22px;font-size:13px}
+.roles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.roles button{background:#fff;border:1px solid #cfd5d8;padding:10px}
+.roles button.active{background:#eef2f3;border-color:#555f65;font-weight:bold}
+.login-card input{width:100%;padding:10px;border:1px solid #cfd5d8}
+.enter{width:100%;padding:10px;margin-top:10px;background:#555f65;color:#fff;border:0}
+.error{color:#b84d4d!important;margin-top:10px!important}
+
+/* notebook */
+.book{max-width:1050px;min-height:calc(100vh - 40px);margin:20px auto;background:#fffdf8;border:1px solid #ddd5c8;box-shadow:0 7px 30px #0002}
+header{padding:25px 30px 20px;border-bottom:1px solid #dce1e3;position:relative}
+header h1{font:700 32px Georgia,"Noto Serif JP",serif;margin:0}
+header p{font-size:13px;color:#777;margin:6px 0 0}
+.user{position:absolute;right:25px;top:25px;display:flex;align-items:center;gap:8px}
+.badge{font-size:11px;border:1px solid #cfd5d8;padding:4px 8px}
+.logout{background:#fff;border:1px solid #cfd5d8;padding:6px 10px}
+
+nav{display:flex;gap:4px;padding:10px 20px;border-bottom:1px solid #dce1e3;overflow:auto}
+nav button{border:0;background:none;color:#777;padding:8px 11px;white-space:nowrap}
+nav button.active{color:#30383d;font-weight:bold;border-bottom:2px solid #555f65}
+
+main{padding:30px}
+.note{border-left:3px solid #555f65;padding-left:18px;margin-bottom:30px}
+.note .date{font-size:12px;color:#888}
+.note h2{font:700 22px Georgia,"Noto Serif JP",serif;margin:5px 0}
+.note p{white-space:pre-wrap;line-height:1.8;margin:0}
+
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.card{background:#fff;border:1px solid #d8dfe1;padding:22px;min-height:135px}
+.card h2{font:700 20px Georgia,"Noto Serif JP",serif;margin:0 0 9px}
+.card p{font-size:13px;color:#777;line-height:1.7;margin:0}
+.open{margin-top:15px;background:#fff;border:1px solid #555f65;padding:7px 13px;color:#30383d}
+.state{float:right;font-size:11px;color:#777}
+
+h2.section{font:700 25px Georgia,"Noto Serif JP",serif}
+.panel{background:#fff;border:1px solid #d8dfe1;padding:20px;margin-bottom:18px}
+.notice{background:#f5f2eb;border-left:3px solid #777;padding:13px;font-size:13px;line-height:1.7}
+.back{border:0;background:none;color:#555f65;padding:0;margin-bottom:15px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px;border-bottom:1px solid #dce1e3;text-align:left;font-size:13px}
+.toggle{background:#fff;border:1px solid #cfd5d8;padding:6px 10px}
+.field{margin:12px 0}
+.field label{display:block;font-size:12px;color:#777;margin-bottom:4px}
+.field input,.field textarea{width:100%;padding:9px;border:1px solid #cfd5d8}
+.field textarea{min-height:110px;resize:vertical}
+.save{background:#555f65;color:#fff;border:0;padding:9px 15px}
+.sim{background:#fff;border:1px solid #d8dfe1;padding:20px;position:relative}
+.sim input{width:100%}
+canvas{width:100%;height:280px;border:1px solid #ddd;background:#fafafa;display:block;margin:10px 0 0 0}
+
+.fullscreen-btn{position:absolute;bottom:20px;right:20px;background:#555f65;color:#fff;border:0;padding:8px 12px;border-radius:4px;cursor:pointer;font-size:12px}
+.fullscreen-btn:hover{background:#3a4452}
+
+.sim-container{position:relative;width:100%;height:500px}
+.sim-iframe{width:100%;height:100%;border:1px solid #ddd;border-radius:4px}
+
+.formula-link-btn{display:inline-block;margin-top:10px;background:#555f65;color:#fff;border:0;padding:10px 15px;border-radius:4px;text-decoration:none;cursor:pointer}
+.formula-link-btn:hover{background:#3a4452}
+
+.akapen-container{width:100%;height:600px;border:1px solid #d8dfe1;border-radius:4px}
+.akapen-fullscreen-btn{position:absolute;bottom:20px;right:20px;background:#555f65;color:#fff;border:0;padding:8px 12px;border-radius:4px;cursor:pointer;font-size:12px;z-index:10}
+.akapen-fullscreen-btn:hover{background:#3a4452}
+
+@media(max-width:650px){
+ .book{margin:0;min-height:100vh}
+ header{padding:20px}
+ .user{position:static;margin-top:12px}
+ main{padding:18px}
+ .grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -597,694 +92,508 @@ canvas {
 <body>
 
 <section id="login" class="login">
-  <div class="login-card">
-    <h1>勉強ノート</h1>
-    <p>授業・教材をまとめています</p>
+ <div class="login-card">
+  <h1>数学ノート</h1>
+  <p>授業・教材をまとめています</p>
 
-    <h3>科目を選択</h3>
-    <div class="subject-select">
-      <button id="mathSubject" class="active">数学</button>
-      <button id="infoSubject">情報</button>
-    </div>
-
-    <h3>ロールを選択</h3>
-    <div class="roles">
-      <button id="hostBtn">ホスト</button>
-      <button id="guestBtn" class="active">ゲスト</button>
-    </div>
-
-    <input id="hostPassword" class="hidden" type="password" placeholder="ホストパスワード">
-    <button id="enterBtn" class="enter">入室</button>
-    <p id="error" class="error"></p>
+  <div class="roles">
+   <button id="hostBtn">ホスト</button>
+   <button id="guestBtn" class="active">ゲスト</button>
   </div>
+
+  <input id="hostPassword" class="hidden" type="password" placeholder="ホストパスワード">
+  <button id="enterBtn" class="enter">入室</button>
+  <p id="error" class="error"></p>
+ </div>
 </section>
 
 <div id="site" class="hidden">
-  <div class="book">
+ <div class="book">
 
-    <header>
-      <h1 id="appTitle">勉強ノート</h1>
-      <p id="appSubtitle">授業・教材をまとめています。</p>
+  <header>
+   <h1>数学ノート</h1>
+   <p>授業・教材をまとめています。</p>
 
-      <div class="user">
-        <span id="subjectBadge" class="subject-badge"></span>
-        <button id="changeSubjectBtn" class="change-subject-btn" onclick="showSubjectChangeModal()">科目変更</button>
-        <span id="roleBadge" class="badge"></span>
-        <button id="logout" class="logout">退出</button>
-      </div>
-    </header>
+   <div class="user">
+    <span id="roleBadge" class="badge"></span>
+    <button id="logout" class="logout">退出</button>
+   </div>
+  </header>
 
-    <nav id="nav"></nav>
+  <nav id="nav"></nav>
 
-    <main id="main"></main>
+  <main id="main"></main>
 
-  </div>
-</div>
-
-<!-- 科目変更モーダル -->
-<div id="subjectModal" class="hidden" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:1000;">
-  <div style="background:#fff; padding:30px; border-radius:8px; width:min(380px, 100%); box-shadow:0 8px 30px #0002;">
-    <h2 style="margin-top:0;">科目を変更</h2>
-    <div class="subject-select">
-      <button id="mathSubjectModal" class="active">数学</button>
-      <button id="infoSubjectModal">情報</button>
-    </div>
-    <button id="confirmSubjectBtn" class="save" style="width:100%; margin-top:10px;">変更</button>
-    <button onclick="closeSubjectChangeModal()" style="width:100%; margin-top:8px; background:#ccc; color:#333; border:0; padding:9px;">キャンセル</button>
-  </div>
+ </div>
 </div>
 
 <script>
-const HOST_PASSWORD = "study-host-2026";
+const HOST_PASSWORD = "math-host-2026";
 
-const SUBJECTS = {
-  math: { name: "数学" },
-  info: { name: "情報" }
-};
-
-const DEFAULT_ITEMS = {
-  math: [
-    { id: "formula", title: "公式ノート", description: "数学の公式をまとめます。", visible: true },
-    { id: "simulator", title: "シミュレータ", description: "数学のシミュレータをまとめます。", visible: true },
-    { id: "akapen", title: "赤ペンノート", description: "問題を解いて、答え合わせや復習をします。", visible: true },
-    { id: "practice", title: "練習問題", description: "授業内容に合わせた練習問題をまとめます。", visible: true },
-    { id: "resources", title: "資料", description: "授業資料や参考資料をまとめます。", visible: true }
-  ],
-  info: [
-    { id: "formula", title: "公式ノート", description: "情報の公式・用語をまとめます。", visible: true },
-    { id: "simulator", title: "シミュレータ", description: "情報のシミュレータをまとめます。", visible: true },
-    { id: "akapen", title: "赤ペンノート", description: "問題を解いて、答え合わせや復習をします。", visible: true },
-    { id: "practice", title: "練習問題", description: "授業内容に合わせた練習問題をまとめます。", visible: true },
-    { id: "resources", title: "資料", description: "授業資料や参考資料をまとめます。", visible: true }
-  ]
-};
-
-const MATH_FORMULAS = [
-  {
-    name: "展開公式（2乗）",
-    tex: "(a\\pm b)^2 = a^2 \\pm 2ab + b^2",
-    note: "「2乗のかたまり」を見たら、まず両端を2乗、真ん中は2倍のかけ算にする。",
-    ex: "(x+3)² を展開しなさい。",
-    ans: "x² + 6x + 9"
-  },
-  {
-    name: "和と差の積",
-    tex: "(a+b)(a-b) = a^2-b^2",
-    note: "「同じ2つの数の和と差」をかけると真ん中の項が消える。",
-    ex: "(x+5)(x-5) を計算しなさい。",
-    ans: "x² − 25"
-  },
-  {
-    name: "2次方程式の解の公式",
-    tex: "x=\\dfrac{-b\\pm\\sqrt{b^2-4ac}}{2a}",
-    note: "因数分解できない2次方程式でも必ず解ける「最終手段」の公式。",
-    ex: "x² − 3x + 1 = 0 を解きなさい。",
-    ans: "x = (3 ± √5) / 2"
-  }
-];
-
-const INFO_FORMULAS = [
-  {
-    name: "情報: ビット",
-    tex: "1\\text{ bit} = 2\\text{ states}",
-    note: "1ビットで表現できる情報は2通り（0または1）。",
-    ex: "8ビットで最大何通りの情報を表現できるか。",
-    ans: "2⁸ = 256通り"
-  },
-  {
-    name: "情報: バイト",
-    tex: "1\\text{ byte} = 8\\text{ bits}",
-    note: "コンピュータの基本単位。1バイト = 8ビット。",
-    ex: "1MBは何バイトか。",
-    ans: "1MB = 1,000,000バイト（10進法）"
-  }
+const DEFAULT_ITEMS = [
+ {id:"formula",title:"公式ノート",description:"数学の公式をまとめます。",visible:true},
+ {id:"sim",title:"シミュレータ",description:"数学のシミュレータをまとめます。",visible:true},
+ {id:"akapen",title:"赤ペンノート",description:"問題を解いて、答え合わせや復習をします。",visible:true},
+ {id:"practice",title:"練習問題",description:"授業内容に合わせた練習問題をまとめます。",visible:true},
+ {id:"resources",title:"資料",description:"授業資料や参考資料をまとめます。",visible:true}
 ];
 
 let data;
-let role = "";
-let page = "home";
-let subject = "math";
-let subjectChangeSelected = "math";
+try{
+ data=JSON.parse(localStorage.getItem("math_note_simple"));
+}catch(e){data=null}
 
-const $ = id => document.getElementById(id);
+if(!data){
+ data={
+  items:DEFAULT_ITEMS,
+  note:{
+   date:new Date().toLocaleDateString("ja-JP"),
+   title:"今日の授業",
+   body:"ここに先生のメモを表示できます。"
+  },
+  simulators:[]
+ };
+}
 
-function loadData() {
-  try {
-    data = JSON.parse(localStorage.getItem("study_note_data_v3"));
-  } catch (e) {
-    data = null;
+let role="";
+let page="home";
+
+const $=id=>document.getElementById(id);
+
+function save(){
+ localStorage.setItem("math_note_simple",JSON.stringify(data));
+}
+
+function escapeHTML(value){
+ return String(value ?? "").replace(/[&<>"']/g,m=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[m]));
+}
+
+function visibleItems(){
+ return data.items.filter(item=>item.visible);
+}
+
+$("hostBtn").onclick=()=>{
+ role="host";
+ $("hostBtn").classList.add("active");
+ $("guestBtn").classList.remove("active");
+ $("hostPassword").classList.remove("hidden");
+ $("error").textContent="";
+};
+
+$("guestBtn").onclick=()=>{
+ role="guest";
+ $("guestBtn").classList.add("active");
+ $("hostBtn").classList.remove("active");
+ $("hostPassword").classList.add("hidden");
+ $("error").textContent="";
+};
+
+$("enterBtn").onclick=()=>{
+ if(role==="host" && $("hostPassword").value!==HOST_PASSWORD){
+  $("error").textContent="ホストパスワードが違います";
+  return;
+ }
+
+ role=role||"guest";
+ sessionStorage.setItem("math_note_role",role);
+ start();
+};
+
+$("logout").onclick=()=>{
+ sessionStorage.removeItem("math_note_role");
+ location.reload();
+};
+
+function start(){
+ $("login").classList.add("hidden");
+ $("site").classList.remove("hidden");
+ $("roleBadge").textContent=role==="host"?"HOST":"GUEST";
+ renderNav();
+ render();
+}
+
+function go(nextPage){
+ page=nextPage;
+ renderNav();
+ render();
+ window.scrollTo(0,0);
+}
+
+function renderNav(){
+ let html=`<button class="${page==="home"?"active":""}" onclick="go('home')">ホーム</button>`;
+
+ visibleItems().forEach(item=>{
+  html+=`<button class="${page===item.id?"active":""}" onclick="go('${item.id}')">${item.title}</button>`;
+ });
+
+ if(role==="host"){
+  html+=`<button class="${page==="admin"?"active":""}" onclick="go('admin')">管理</button>`;
+ }
+
+ $("nav").innerHTML=html;
+}
+
+function render(){
+ if(page==="home") renderHome();
+ else if(page==="admin" && role==="host") renderAdmin();
+ else if(page==="formula") renderFormula();
+ else if(page==="sim") renderSimulator();
+ else if(page==="akapen") renderAkapen();
+ else if(page==="practice") renderPractice();
+ else if(page==="resources") renderResources();
+}
+
+function renderHome(){
+ const note=data.note;
+
+ $("main").innerHTML=`
+  <div class="note">
+   <div class="date">${escapeHTML(note.date)}</div>
+   <h2>${escapeHTML(note.title)}</h2>
+   <p>${escapeHTML(note.body)}</p>
+  </div>
+
+  <h2 class="section">教材</h2>
+
+  <div class="grid">
+   ${visibleItems().map(item=>`
+    <div class="card">
+     <span class="state">公開</span>
+     <h2>${item.title}</h2>
+     <p>${item.description}</p>
+     <button class="open" onclick="go('${item.id}')">開く</button>
+    </div>
+   `).join("")}
+  </div>
+ `;
+}
+
+function renderAdmin(){
+ $("main").innerHTML=`
+  <h2 class="section">管理</h2>
+
+  <div class="panel">
+   <h3>公開設定</h3>
+
+   <table>
+    <tr>
+     <th>教材</th>
+     <th>状態</th>
+     <th>操作</th>
+    </tr>
+
+    ${data.items.map(item=>`
+     <tr>
+      <td>${item.title}</td>
+      <td>${item.visible?"公開":"非公開"}</td>
+      <td>
+       <button class="toggle" onclick="toggleItem('${item.id}')">
+        ${item.visible?"非公開にする":"公開する"}
+       </button>
+      </td>
+     </tr>
+    `).join("")}
+   </table>
+  </div>
+
+  <div class="panel">
+   <h3>今日のメモ</h3>
+
+   <div class="field">
+    <label>日付</label>
+    <input id="noteDate" value="${escapeHTML(data.note.date)}">
+   </div>
+
+   <div class="field">
+    <label>タイトル</label>
+    <input id="noteTitle" value="${escapeHTML(data.note.title)}">
+   </div>
+
+   <div class="field">
+    <label>コメント</label>
+    <textarea id="noteBody">${escapeHTML(data.note.body)}</textarea>
+   </div>
+
+   <button class="save" onclick="saveNote()">保存</button>
+  </div>
+
+  <div class="panel">
+   <h3>シミュレータを追加</h3>
+
+   <div class="field">
+    <label>シミュレータ名</label>
+    <input id="simName" placeholder="例：二次関数グラフ">
+   </div>
+
+   <div class="field">
+    <label>説明</label>
+    <textarea id="simDesc" placeholder="このシミュレータについての説明"></textarea>
+   </div>
+
+   <div class="field">
+    <label>HTMLファイルをアップロード</label>
+    <input type="file" id="simFile" accept=".html,.htm">
+    <p id="simFileInfo" style="font-size:12px;color:#777;margin-top:5px;"></p>
+   </div>
+
+   <button class="save" onclick="addSimulator()">追加</button>
+  </div>
+
+  <div class="notice">
+   現在はこのブラウザ内に保存する試作版です。
+   GitHub Pagesで先生の変更を生徒全員へ共有するには、後でFirebaseなどのデータベースを接続します。
+  </div>
+ `;
+
+ $("simFile").onchange = function(){
+  const file = this.files[0];
+  $("simFileInfo").textContent = file ? `✓ ${file.name} を選択しました` : "";
+ };
+}
+
+function toggleItem(id){
+ data.items=data.items.map(item=>
+  item.id===id ? {...item,visible:!item.visible} : item
+ );
+ save();
+ renderNav();
+ render();
+}
+
+function saveNote(){
+ data.note={
+  date:$("noteDate").value,
+  title:$("noteTitle").value,
+  body:$("noteBody").value
+ };
+ save();
+ render();
+}
+
+function renderFormula(){
+ $("main").innerHTML=`
+  <button class="back" onclick="go('home')">← 戻る</button>
+  <h2 class="section">公式ノート</h2>
+  <p>高校数学の公式をまとめています。</p>
+  <button class="formula-link-btn" onclick="window.open('高校数学_公式ノート.html', '_blank')">📖 公式ノートを開く</button>
+ `;
+}
+
+function renderSimulator(){
+ $("main").innerHTML=`
+  <button class="back" onclick="go('home')">← 戻る</button>
+  <h2 class="section">シミュレータ</h2>
+
+  <div class="sim">
+   <h3>二次関数</h3>
+   <p>y = ax² の a を変化させます。</p>
+
+   <input id="coefficient" type="range" min="-3" max="3" step="0.1" value="1">
+   <div id="coefficientText">a = 1.0</div>
+
+   <canvas id="graph" width="900" height="320"></canvas>
+   <button class="fullscreen-btn" onclick="openQuadraticFullscreen()">全画面で開く</button>
+  </div>
+
+  ${(data.simulators && data.simulators.length > 0) ? `
+   <h3 style="margin-top:30px;">アップロード済みシミュレータ</h3>
+   ${data.simulators.map((sim, idx) => `
+    <div class="sim">
+     <h4>${escapeHTML(sim.name)}</h4>
+     <p>${escapeHTML(sim.desc)}</p>
+     <div class="sim-container">
+      <iframe class="sim-iframe" srcdoc="${sim.fileContent.replace(/"/g, '&quot;')}"></iframe>
+      <button class="fullscreen-btn" onclick="openSimulatorFullscreen(${idx})">全画面で開く</button>
+     </div>
+    </div>
+   `).join("")}
+  ` : ""}
+ `;
+
+ const range=$("coefficient");
+ const text=$("coefficientText");
+ const canvas=$("graph");
+ const ctx=canvas.getContext("2d");
+
+ function draw(){
+  const a=Number(range.value);
+
+  text.textContent="a = "+a.toFixed(1);
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  ctx.beginPath();
+  ctx.moveTo(450,0);
+  ctx.lineTo(450,320);
+  ctx.moveTo(0,160);
+  ctx.lineTo(900,160);
+  ctx.stroke();
+
+  ctx.beginPath();
+
+  let first=true;
+
+  for(let px=0;px<=900;px++){
+   const x=(px-450)/45;
+   const y=160-a*x*x*18;
+
+   if(y<0 || y>320){
+    first=true;
+    continue;
+   }
+
+   if(first){
+    ctx.moveTo(px,y);
+    first=false;
+   }else{
+    ctx.lineTo(px,y);
+   }
   }
 
-  if (!data) {
-    data = {
-      math: {
-        items: JSON.parse(JSON.stringify(DEFAULT_ITEMS.math)),
-        note: {
-          date: new Date().toLocaleDateString("ja-JP"),
-          title: "今日の授業",
-          body: "ここに先生のメモを表示できます。"
-        },
-        simulators: [],
-        resources: [],
-        comments: []
-      },
-      info: {
-        items: JSON.parse(JSON.stringify(DEFAULT_ITEMS.info)),
-        note: {
-          date: new Date().toLocaleDateString("ja-JP"),
-          title: "今日の授業",
-          body: "ここに先生のメモを表示できます。"
-        },
-        simulators: [],
-        resources: [],
-        comments: []
-      }
-    };
-  }
+  ctx.stroke();
+ }
+
+ range.oninput=draw;
+ draw();
 }
 
-function save() {
-  localStorage.setItem("study_note_data_v3", JSON.stringify(data));
+function openQuadraticFullscreen(){
+ const html = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+   <title>二次関数 - 全画面</title>
+   <style>
+    body{margin:0;padding:20px;background:#f5f5f5;font-family:Arial,sans-serif}
+    .container{max-width:1000px;margin:0 auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.1)}
+    h1{margin-top:0}
+    canvas{width:100%;height:400px;border:1px solid #ddd;display:block;margin:20px 0}
+    input{width:100%;padding:10px;font-size:16px}
+    div{margin:10px 0}
+   </style>
+  </head>
+  <body>
+   <div class="container">
+    <h1>二次関数 y = ax²</h1>
+    <p>aの値を変化させてグラフの変化を観察してください。</p>
+    <input id="coefficient" type="range" min="-3" max="3" step="0.1" value="1">
+    <div id="coefficientText">a = 1.0</div>
+    <canvas id="graph" width="1200" height="600"></canvas>
+   </div>
+   <script>
+    const range=document.getElementById('coefficient');
+    const text=document.getElementById('coefficientText');
+    const canvas=document.getElementById('graph');
+    const ctx=canvas.getContext('2d');
+    
+    function draw(){
+     const a=Number(range.value);
+     text.textContent='a = '+a.toFixed(1);
+     ctx.clearRect(0,0,canvas.width,canvas.height);
+     ctx.beginPath();
+     ctx.moveTo(600,0);
+     ctx.lineTo(600,600);
+     ctx.moveTo(0,300);
+     ctx.lineTo(1200,300);
+     ctx.stroke();
+     ctx.beginPath();
+     let first=true;
+     for(let px=0;px<=1200;px++){
+      const x=(px-600)/60;
+      const y=300-a*x*x*30;
+      if(y<0||y>600){first=true;continue}
+      if(first){ctx.moveTo(px,y);first=false}else{ctx.lineTo(px,y)}
+     }
+     ctx.stroke();
+    }
+    range.oninput=draw;
+    draw();
+   </script>
+  </body>
+  </html>
+ `;
+ const blob = new Blob([html], {type:'text/html'});
+ const url = URL.createObjectURL(blob);
+ window.open(url);
 }
 
-function escapeHTML(value) {
-  return String(value ?? "").replace(/[&<>"']/g, m => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  }[m]));
+function openSimulatorFullscreen(idx){
+ const sim = data.simulators[idx];
+ const blob = new Blob([sim.fileContent], {type:'text/html'});
+ const url = URL.createObjectURL(blob);
+ window.open(url);
 }
 
-function visibleItems() {
-  return data[subject].items.filter(item => item.visible);
+function renderAkapen(){
+ $("main").innerHTML=`
+  <button class="back" onclick="go('home')">← 戻る</button>
+  <h2 class="section">赤ペンノート</h2>
+  <p>手書き計算ノートと問題採点機能です。</p>
+  <div style="position:relative;">
+   <iframe class="akapen-container" src="akapen-note.html"></iframe>
+   <button class="akapen-fullscreen-btn" onclick="window.open('akapen-note.html', '_blank')">全画面で開く</button>
+  </div>
+ `;
 }
 
-function getCurrentData() {
-  return data[subject];
+function renderPractice(){
+ $("main").innerHTML=`
+  <button class="back" onclick="go('home')">← 戻る</button>
+  <h2 class="section">練習問題</h2>
+
+  <div class="panel">
+   <p>ここに授業用の練習問題を追加できます。</p>
+  </div>
+ `;
 }
 
-// ===== LOGIN EVENTS =====
-$("mathSubject").onclick = () => {
-  subject = "math";
-  $("mathSubject").classList.add("active");
-  $("infoSubject").classList.remove("active");
-};
+function renderResources(){
+ $("main").innerHTML=`
+  <button class="back" onclick="go('home')">← 戻る</button>
+  <h2 class="section">資料</h2>
 
-$("infoSubject").onclick = () => {
-  subject = "info";
-  $("infoSubject").classList.add("active");
-  $("mathSubject").classList.remove("active");
-};
-
-$("hostBtn").onclick = () => {
-  role = "host";
-  $("hostBtn").classList.add("active");
-  $("guestBtn").classList.remove("active");
-  $("hostPassword").classList.remove("hidden");
-  $("error").textContent = "";
-};
-
-$("guestBtn").onclick = () => {
-  role = "guest";
-  $("guestBtn").classList.add("active");
-  $("hostBtn").classList.remove("active");
-  $("hostPassword").classList.add("hidden");
-  $("error").textContent = "";
-};
-
-$("enterBtn").onclick = () => {
-  if (role === "host" && $("hostPassword").value !== HOST_PASSWORD) {
-    $("error").textContent = "ホストパスワードが違います";
-    return;
-  }
-
-  role = role || "guest";
-  sessionStorage.setItem("study_note_role", role);
-  sessionStorage.setItem("study_note_subject", subject);
-  start();
-};
-
-$("logout").onclick = () => {
-  sessionStorage.removeItem("study_note_role");
-  sessionStorage.removeItem("study_note_subject");
-  location.reload();
-};
-
-function showSubjectChangeModal() {
-  subjectChangeSelected = subject;
-  if (subjectChangeSelected === "math") {
-    $("mathSubjectModal").classList.add("active");
-    $("infoSubjectModal").classList.remove("active");
-  } else {
-    $("infoSubjectModal").classList.add("active");
-    $("mathSubjectModal").classList.remove("active");
-  }
-  $("subjectModal").style.display = "flex";
+  <div class="panel">
+   <p>ここに授業資料や参考資料を追加できます。</p>
+  </div>
+ `;
 }
 
-function closeSubjectChangeModal() {
-  $("subjectModal").style.display = "none";
-}
+function addSimulator(){
+ const name = $("simName").value.trim();
+ const desc = $("simDesc").value.trim();
+ const fileInput = $("simFile");
 
-$("mathSubjectModal").onclick = () => {
-  subjectChangeSelected = "math";
-  $("mathSubjectModal").classList.add("active");
-  $("infoSubjectModal").classList.remove("active");
-};
+ if(!name || !fileInput.files[0]){
+  alert("シミュレータ名とファイルを選択してください");
+  return;
+ }
 
-$("infoSubjectModal").onclick = () => {
-  subjectChangeSelected = "info";
-  $("infoSubjectModal").classList.add("active");
-  $("mathSubjectModal").classList.remove("active");
-};
-
-$("confirmSubjectBtn").onclick = () => {
-  subject = subjectChangeSelected;
-  sessionStorage.setItem("study_note_subject", subject);
-  closeSubjectChangeModal();
-  $("appTitle").textContent = SUBJECTS[subject].name + " 勉強ノート";
-  $("subjectBadge").textContent = SUBJECTS[subject].name;
-  renderNav();
-  render();
-};
-
-function start() {
-  $("login").classList.add("hidden");
-  $("site").classList.remove("hidden");
-  $("appTitle").textContent = SUBJECTS[subject].name + " 勉強ノート";
-  $("subjectBadge").textContent = SUBJECTS[subject].name;
-  $("roleBadge").textContent = role === "host" ? "HOST" : "GUEST";
-  renderNav();
-  render();
-}
-
-function go(nextPage) {
-  page = nextPage;
-  renderNav();
-  render();
-  window.scrollTo(0, 0);
-}
-
-function renderNav() {
-  let html = `<button class="${page === "home" ? "active" : ""}" onclick="go('home')">ホーム</button>`;
-
-  visibleItems().forEach(item => {
-    html += `<button class="${page === item.id ? "active" : ""}" onclick="go('${item.id}')">${item.title}</button>`;
-  });
-
-  if (role === "host") {
-    html += `<button class="${page === "admin" ? "active" : ""}" onclick="go('admin')">管理</button>`;
-  }
-
-  $("nav").innerHTML = html;
-}
-
-function render() {
-  if (page === "home") renderHome();
-  else if (page === "admin" && role === "host") renderAdmin();
-  else if (page === "formula") renderFormula();
-  else if (page === "simulator") renderSimulator();
-  else if (page === "akapen") renderAkapen();
-  else if (page === "practice") renderPractice();
-  else if (page === "resources") renderResources();
-}
-
-function renderHome() {
-  const currData = getCurrentData();
-  const note = currData.note;
-
-  $("main").innerHTML = `
-    <div class="note">
-      <div class="date">${escapeHTML(note.date)}</div>
-      <h2>${escapeHTML(note.title)}</h2>
-      <p>${escapeHTML(note.body)}</p>
-    </div>
-
-    <h2 class="section">教材</h2>
-
-    <div class="grid">
-      ${visibleItems().map(item => `
-        <div class="card">
-          <h2>${item.title}</h2>
-          <p>${item.description}</p>
-          <button class="open" onclick="go('${item.id}')">開く</button>
-        </div>
-      `).join("")}
-    </div>
-  `;
-}
-
-function renderAdmin() {
-  const currData = getCurrentData();
-
-  $("main").innerHTML = `
-    <h2 class="section">管理</h2>
-
-    <div class="panel">
-      <h3>公開設定</h3>
-      <table>
-        <tr>
-          <th>教材</th>
-          <th>状態</th>
-          <th>操作</th>
-        </tr>
-        ${currData.items.map(item => `
-          <tr>
-            <td>${item.title}</td>
-            <td>${item.visible ? "公開" : "非公開"}</td>
-            <td>
-              <button class="toggle" onclick="toggleItem('${item.id}')">
-                ${item.visible ? "非公開にする" : "公開する"}
-              </button>
-            </td>
-          </tr>
-        `).join("")}
-      </table>
-    </div>
-
-    <div class="panel">
-      <h3>今日のメモ</h3>
-      <div class="field">
-        <label>日付</label>
-        <input id="noteDate" value="${escapeHTML(currData.note.date)}">
-      </div>
-      <div class="field">
-        <label>タイトル</label>
-        <input id="noteTitle" value="${escapeHTML(currData.note.title)}">
-      </div>
-      <div class="field">
-        <label>コメント</label>
-        <textarea id="noteBody">${escapeHTML(currData.note.body)}</textarea>
-      </div>
-      <button class="save" onclick="saveNote()">保存</button>
-    </div>
-
-    <div class="panel">
-      <h3>シミュレータを追加</h3>
-      <div class="field">
-        <label>シミュレータ名</label>
-        <input id="simName" placeholder="例：二次関数グラフ">
-      </div>
-      <div class="field">
-        <label>説明</label>
-        <textarea id="simDesc" placeholder="このシミュレータについての説明"></textarea>
-      </div>
-      <div class="field">
-        <label>HTMLファイルをアップロード</label>
-        <div class="file-input-wrapper">
-          <input type="file" id="simFileInput" accept=".html,.htm,.jsx,.js" onchange="handleSimFileSelect()">
-          <label for="simFileInput" class="file-input-label">ファイルを選択</label>
-        </div>
-        <div id="simFileSelected" style="font-size:12px; color:var(--ink-soft); margin-top:5px;"></div>
-      </div>
-      <button class="save" onclick="addSimulator()">追加</button>
-    </div>
-
-    <div class="panel">
-      <h3>資料を追加</h3>
-      <div class="field">
-        <label>資料名</label>
-        <input id="resName" placeholder="例：第3章プリント">
-      </div>
-      <div class="field">
-        <label>説明</label>
-        <textarea id="resDesc" placeholder="資料についての説明"></textarea>
-      </div>
-      <div class="field">
-        <label>リンクまたはURL</label>
-        <input id="resLink" type="url" placeholder="https://example.com">
-      </div>
-      <button class="save" onclick="addResource()">追加</button>
-    </div>
-  `;
-}
-
-function renderFormula() {
-  const subject_label = subject === "math" ? "数学" : "情報";
-  const formulas = subject === "math" ? MATH_FORMULAS : INFO_FORMULAS;
-
-  let html = `
-    <button class="back" onclick="go('home')">← 戻る</button>
-    <h2 class="section">${subject_label}公式</h2>
-    <div class="field" style="margin-bottom: 20px;">
-      <input id="formulaSearch" type="text" placeholder="公式を検索..." onkeyup="filterFormulas()">
-    </div>
-    <div id="formulaList">
-  `;
-
-  formulas.forEach((f, i) => {
-    html += `
-      <div class="formula-card" data-index="${i}" onclick="toggleFormula(${i})">
-        <div class="name">
-          <span>${escapeHTML(f.name)}</span>
-          <span class="plus">+</span>
-        </div>
-        <div class="formula-tex"><span class="tex-${i}"></span></div>
-        <div class="formula-details">
-          <div class="formula-inner">
-            <p><strong>解説：</strong>${escapeHTML(f.note)}</p>
-            <p><strong>例：</strong>${escapeHTML(f.ex)}</p>
-            <p><strong>答え：</strong>${escapeHTML(f.ans)}</p>
-          </div>
-        </div>
-      </div>
-    `;
-  });
-
-  html += `</div>`;
-  $("main").innerHTML = html;
-
-  formulas.forEach((f, i) => {
-    try {
-      const el = document.querySelector(`.tex-${i}`);
-      if (el) katex.render(f.tex, el, { throwOnError: false });
-    } catch (e) {}
-  });
-}
-
-function filterFormulas() {
-  const q = $("formulaSearch").value.toLowerCase();
-  document.querySelectorAll(".formula-card").forEach(card => {
-    const text = card.textContent.toLowerCase();
-    card.style.display = text.includes(q) ? "" : "none";
-  });
-}
-
-function toggleFormula(idx) {
-  const cards = document.querySelectorAll(".formula-card");
-  cards[idx].classList.toggle("open");
-}
-
-function renderSimulator() {
-  const currData = getCurrentData();
-
-  let html = `
-    <button class="back" onclick="go('home')">← 戻る</button>
-    <h2 class="section">シミュレータ</h2>
-  `;
-
-  if (currData.simulators.length === 0) {
-    html += `<p>シミュレータがまだ追加されていません。</p>`;
-  } else {
-    currData.simulators.forEach((sim, idx) => {
-      html += `
-        <div class="sim">
-          <h3>${escapeHTML(sim.name)}</h3>
-          <p>${escapeHTML(sim.desc)}</p>
-      `;
-      
-      if (sim.fileContent) {
-        html += `<iframe srcdoc="${sim.fileContent.replace(/"/g, '&quot;')}" style="width:100%; height:500px; border:1px solid #ddd; border-radius:4px;"></iframe>`;
-      }
-      
-      html += `
-          ${role === "host" ? `<button onclick="deleteSimulator(${idx})" style="background:#f0f0f0; color:var(--red); border:1px solid var(--red); margin-top:10px;">削除</button>` : ""}
-        </div>
-      `;
-    });
-  }
-
-  $("main").innerHTML = html;
-}
-
-let simFileContent = null;
-
-function handleSimFileSelect() {
-  const file = $("simFileInput").files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    simFileContent = e.target.result;
-    $("simFileSelected").textContent = `✓ ${escapeHTML(file.name)} を選択しました`;
-  };
-  reader.readAsText(file);
-}
-
-function renderAkapen() {
-  $("main").innerHTML = `
-    <button class="back" onclick="go('home')">← 戻る</button>
-    <h2 class="section">赤ペンノート</h2>
-    <div class="panel">
-      <h3>手書き計算ノート</h3>
-      <p>指やペンで直接書いてね。計算式・文章問題・図形（寸法つき）、なんでもOK。2本指でつまむと拡大縮小できるよ。書き終わったら「赤ペンで採点」を押してね。</p>
-    </div>
-    <div class="panel">
-      <h3>クイズモード</h3>
-      <p>科目と単元を選んで問題を出そう。答えはこの下に手書きして、「答え合わせ」を押してね。</p>
-    </div>
-  `;
-}
-
-function renderPractice() {
-  $("main").innerHTML = `
-    <button class="back" onclick="go('home')">← 戻る</button>
-    <h2 class="section">練習問題</h2>
-    <div class="panel">
-      <p>ここに授業用の練習問題を追加できます。</p>
-    </div>
-  `;
-}
-
-function renderResources() {
-  const currData = getCurrentData();
-
-  let html = `
-    <button class="back" onclick="go('home')">← 戻る</button>
-    <h2 class="section">資料</h2>
-  `;
-
-  if (currData.resources.length === 0) {
-    html += `<p>資料がまだ追加されていません。</p>`;
-  } else {
-    html += `<ul class="resource-list">`;
-    currData.resources.forEach((res, i) => {
-      html += `
-        <li class="resource-item">
-          <div class="resource-info">
-            <h3>${escapeHTML(res.name)}</h3>
-            <p>${escapeHTML(res.desc)}</p>
-            <p style="margin-top: 5px;"><a href="${escapeHTML(res.link)}" target="_blank" rel="noopener">📎 ${escapeHTML(res.link)}</a></p>
-            <p style="font-size: 11px; color: #999; margin-top: 3px;"><strong>追加日:</strong> ${escapeHTML(res.date)}</p>
-          </div>
-          <div class="resource-actions">
-            ${role === "host" ? `<button class="delete-btn" onclick="deleteResource(${i})">削除</button>` : ""}
-          </div>
-        </li>
-      `;
-    });
-    html += `</ul>`;
-  }
-
-  $("main").innerHTML = html;
-}
-
-function toggleItem(id) {
-  const currData = getCurrentData();
-  currData.items = currData.items.map(item =>
-    item.id === id ? { ...item, visible: !item.visible } : item
-  );
-  save();
-  renderNav();
-  render();
-}
-
-function saveNote() {
-  const currData = getCurrentData();
-  currData.note = {
-    date: $("noteDate").value,
-    title: $("noteTitle").value,
-    body: $("noteBody").value
-  };
-  save();
-  alert("メモを保存しました");
-  render();
-}
-
-function addSimulator() {
-  const currData = getCurrentData();
-  const name = $("simName").value.trim();
-  const desc = $("simDesc").value.trim();
-
-  if (!name) {
-    alert("シミュレータ名を入力してください");
-    return;
-  }
-
-  currData.simulators.push({ 
-    name, 
-    desc, 
-    fileContent: simFileContent || "",
-    date: new Date().toLocaleDateString("ja-JP") 
+ const reader = new FileReader();
+ reader.onload = (e) => {
+  if(!data.simulators) data.simulators = [];
+  data.simulators.push({
+   name: name,
+   desc: desc,
+   fileContent: e.target.result
   });
   save();
   $("simName").value = "";
   $("simDesc").value = "";
-  $("simFileInput").value = "";
-  $("simFileSelected").textContent = "";
-  simFileContent = null;
+  fileInput.value = "";
+  $("simFileInfo").textContent = "";
   alert("シミュレータを追加しました");
   renderAdmin();
+ };
+ reader.readAsText(fileInput.files[0]);
 }
 
-function deleteSimulator(idx) {
-  const currData = getCurrentData();
-  if (confirm("このシミュレータを削除しますか？")) {
-    currData.simulators.splice(idx, 1);
-    save();
-    renderSimulator();
-  }
-}
+const savedRole=sessionStorage.getItem("math_note_role");
 
-function addResource() {
-  const currData = getCurrentData();
-  const name = $("resName").value.trim();
-  const desc = $("resDesc").value.trim();
-  const link = $("resLink").value.trim();
-
-  if (!name || !link) {
-    alert("資料名とリンクを入力してください");
-    return;
-  }
-
-  currData.resources.push({ 
-    name, 
-    desc, 
-    link, 
-    date: new Date().toLocaleDateString("ja-JP") 
-  });
-  save();
-  $("resName").value = "";
-  $("resDesc").value = "";
-  $("resLink").value = "";
-  alert("資料を追加しました");
-  renderAdmin();
-}
-
-function deleteResource(i) {
-  const currData = getCurrentData();
-  if (confirm("この資料を削除しますか？")) {
-    currData.resources.splice(i, 1);
-    save();
-    renderResources();
-  }
-}
-
-// ===== INITIALIZE =====
-loadData();
-
-const savedRole = sessionStorage.getItem("study_note_role");
-const savedSubject = sessionStorage.getItem("study_note_subject");
-
-if (savedRole) {
-  role = savedRole;
-  subject = savedSubject || "math";
-  if (subject === "math") {
-    $("mathSubject").classList.add("active");
-    $("infoSubject").classList.remove("active");
-  } else {
-    $("infoSubject").classList.add("active");
-    $("mathSubject").classList.remove("active");
-  }
-  start();
+if(savedRole){
+ role=savedRole;
+ start();
 }
 </script>
 
