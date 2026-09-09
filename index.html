@@ -654,8 +654,12 @@ canvas {
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const HOST_PASSWORD = "study-host-2026";
+const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+const SUPABASE_PUBLISHABLE_KEY = "YOUR_SUPABASE_PUBLISHABLE_KEY";
+const supabaseClient = (SUPABASE_URL.startsWith("http") && !SUPABASE_PUBLISHABLE_KEY.startsWith("YOUR_")) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
+const CLOUD_ROW_ID = "global";
 
 const SUBJECTS = {
   math: { name: "数学" },
@@ -726,45 +730,27 @@ let subjectChangeSelected = "math";
 
 const $ = id => document.getElementById(id);
 
-function loadData() {
-  try {
-    data = JSON.parse(localStorage.getItem("study_note_data_v3"));
-  } catch (e) {
-    data = null;
-  }
-
-  if (!data) {
-    data = {
-      math: {
-        items: JSON.parse(JSON.stringify(DEFAULT_ITEMS.math)),
-        note: {
-          date: new Date().toLocaleDateString("ja-JP"),
-          title: "今日の授業",
-          body: "ここに先生のメモを表示できます。"
-        },
-        simulators: [],
-        resources: [],
-        comments: []
-      },
-      info: {
-        items: JSON.parse(JSON.stringify(DEFAULT_ITEMS.info)),
-        note: {
-          date: new Date().toLocaleDateString("ja-JP"),
-          title: "今日の授業",
-          body: "ここに先生のメモを表示できます。"
-        },
-        simulators: [],
-        resources: [],
-        comments: []
-      }
-    };
-  }
+function defaultData() { return { math:{items:JSON.parse(JSON.stringify(DEFAULT_ITEMS.math)),note:{date:new Date().toLocaleDateString("ja-JP"),title:"今日の授業",body:"ここに先生のメモを表示できます。"},simulators:[],resources:[],comments:[]}, info:{items:JSON.parse(JSON.stringify(DEFAULT_ITEMS.info)),note:{date:new Date().toLocaleDateString("ja-JP"),title:"今日の授業",body:"ここに先生のメモを表示できます。"},simulators:[],resources:[],comments:[]} }; }
+async function loadData() {
+  data = defaultData();
+  if (!supabaseClient) { try { data = JSON.parse(localStorage.getItem("study_note_data_v3")) || data; } catch(e) {} return; }
+  const { data: row, error } = await supabaseClient.from("study_note_data").select("data").eq("id", CLOUD_ROW_ID).maybeSingle();
+  if (error) { console.error(error); alert("クラウドデータの読み込みに失敗しました。Supabase設定を確認してください。"); return; }
+  if (row && row.data) data = row.data;
 }
-
-function save() {
-  localStorage.setItem("study_note_data_v3", JSON.stringify(data));
+async function save() {
+  if (!supabaseClient) { localStorage.setItem("study_note_data_v3", JSON.stringify(data)); return true; }
+  const { error } = await supabaseClient.from("study_note_data").upsert({id:CLOUD_ROW_ID,data:data,updated_at:new Date().toISOString()});
+  if (error) { console.error(error); alert("保存できませんでした。ホストとしてログインしているか確認してください。"); return false; }
+  return true;
 }
-
+async function refreshHostRole() {
+  if (!supabaseClient) return false;
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  if (!user) return false;
+  const { data: host } = await supabaseClient.from("host_users").select("user_id").eq("user_id", user.id).maybeSingle();
+  return !!host;
+}
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, m => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -780,51 +766,24 @@ function getCurrentData() {
 }
 
 // ===== LOGIN EVENTS =====
-$("mathSubject").onclick = () => {
-  subject = "math";
-  $("mathSubject").classList.add("active");
-  $("infoSubject").classList.remove("active");
+$("mathSubject").onclick=()=>{subject="math";$("mathSubject").classList.add("active");$("infoSubject").classList.remove("active");};
+$("infoSubject").onclick=()=>{subject="info";$("infoSubject").classList.add("active");$("mathSubject").classList.remove("active");};
+$("hostBtn").onclick=()=>{role="host";$("hostBtn").classList.add("active");$("guestBtn").classList.remove("active");$("hostPassword").classList.remove("hidden");$("hostPassword").placeholder="Supabaseのホストパスワード";$("error").textContent="";};
+$("guestBtn").onclick=()=>{role="guest";$("guestBtn").classList.add("active");$("hostBtn").classList.remove("active");$("hostPassword").classList.add("hidden");$("error").textContent="";};
+$("enterBtn").onclick=async()=>{
+  $("error").textContent="";
+  if(role==="host"){
+    if(!supabaseClient){$("error").textContent="SupabaseのURLとPublishable keyをHTMLに設定してください";return;}
+    const email=prompt("ホスト用メールアドレスを入力してください");
+    if(!email) return;
+    const password=$("hostPassword").value;
+    const {error}=await supabaseClient.auth.signInWithPassword({email,password});
+    if(error){$("error").textContent="ログインに失敗しました";return;}
+    if(!await refreshHostRole()){await supabaseClient.auth.signOut();$("error").textContent="このアカウントはホストとして登録されていません";return;}
+  } else role="guest";
+  sessionStorage.setItem("study_note_role",role);sessionStorage.setItem("study_note_subject",subject);await start();
 };
-
-$("infoSubject").onclick = () => {
-  subject = "info";
-  $("infoSubject").classList.add("active");
-  $("mathSubject").classList.remove("active");
-};
-
-$("hostBtn").onclick = () => {
-  role = "host";
-  $("hostBtn").classList.add("active");
-  $("guestBtn").classList.remove("active");
-  $("hostPassword").classList.remove("hidden");
-  $("error").textContent = "";
-};
-
-$("guestBtn").onclick = () => {
-  role = "guest";
-  $("guestBtn").classList.add("active");
-  $("hostBtn").classList.remove("active");
-  $("hostPassword").classList.add("hidden");
-  $("error").textContent = "";
-};
-
-$("enterBtn").onclick = () => {
-  if (role === "host" && $("hostPassword").value !== HOST_PASSWORD) {
-    $("error").textContent = "ホストパスワードが違います";
-    return;
-  }
-
-  role = role || "guest";
-  sessionStorage.setItem("study_note_role", role);
-  sessionStorage.setItem("study_note_subject", subject);
-  start();
-};
-
-$("logout").onclick = () => {
-  sessionStorage.removeItem("study_note_role");
-  sessionStorage.removeItem("study_note_subject");
-  location.reload();
-};
+$("logout").onclick=async()=>{if(supabaseClient) await supabaseClient.auth.signOut();sessionStorage.clear();location.reload();};
 
 function showSubjectChangeModal() {
   subjectChangeSelected = subject;
@@ -864,7 +823,7 @@ $("confirmSubjectBtn").onclick = () => {
   render();
 };
 
-function start() {
+async function start() {
   $("login").classList.add("hidden");
   $("site").classList.remove("hidden");
   $("appTitle").textContent = SUBJECTS[subject].name + " 勉強ノート";
@@ -1170,29 +1129,29 @@ function renderResources() {
   $("main").innerHTML = html;
 }
 
-function toggleItem(id) {
+async function toggleItem(id) {
   const currData = getCurrentData();
   currData.items = currData.items.map(item =>
     item.id === id ? { ...item, visible: !item.visible } : item
   );
-  save();
+  await save();
   renderNav();
   render();
 }
 
-function saveNote() {
+async function saveNote() {
   const currData = getCurrentData();
   currData.note = {
     date: $("noteDate").value,
     title: $("noteTitle").value,
     body: $("noteBody").value
   };
-  save();
+  await save();
   alert("メモを保存しました");
   render();
 }
 
-function addSimulator() {
+async function addSimulator() {
   const currData = getCurrentData();
   const name = $("simName").value.trim();
   const desc = $("simDesc").value.trim();
@@ -1208,7 +1167,7 @@ function addSimulator() {
     fileContent: simFileContent || "",
     date: new Date().toLocaleDateString("ja-JP") 
   });
-  save();
+  await save();
   $("simName").value = "";
   $("simDesc").value = "";
   $("simFileInput").value = "";
@@ -1218,11 +1177,11 @@ function addSimulator() {
   renderAdmin();
 }
 
-function deleteSimulator(idx) {
+async function deleteSimulator(idx) {
   const currData = getCurrentData();
   if (confirm("このシミュレータを削除しますか？")) {
     currData.simulators.splice(idx, 1);
-    save();
+    await save();
     renderSimulator();
   }
 }
@@ -1256,7 +1215,7 @@ function downloadResourceFile(idx) {
   a.remove();
 }
 
-function addResource() {
+async function addResource() {
   const currData = getCurrentData();
   const name = $("resName").value.trim();
   const desc = $("resDesc").value.trim();
@@ -1280,7 +1239,7 @@ function addResource() {
     fileName: resourceFileName || "",
     date: new Date().toLocaleDateString("ja-JP")
   });
-  save();
+  await save();
   $("resName").value = "";
   $("resDesc").value = "";
   $("resLink").value = "";
@@ -1292,18 +1251,18 @@ function addResource() {
   renderAdmin();
 }
 
-function deleteResource(i) {
+async function deleteResource(i) {
   const currData = getCurrentData();
   if (confirm("この資料を削除しますか？")) {
     currData.resources.splice(i, 1);
-    save();
+    await save();
     renderResources();
   }
 }
 
 // ===== INITIALIZE =====
-loadData();
-
+(async()=>{
+await loadData();
 const savedRole = sessionStorage.getItem("study_note_role");
 const savedSubject = sessionStorage.getItem("study_note_subject");
 
@@ -1317,8 +1276,10 @@ if (savedRole) {
     $("infoSubject").classList.add("active");
     $("mathSubject").classList.remove("active");
   }
-  start();
+  if (role === "host" && !(await refreshHostRole())) role = "guest";
+  await start();
 }
+})();
 </script>
 
 </body>
