@@ -1122,26 +1122,6 @@ function renderAdmin() {
       <button class="save" onclick="saveNote()">保存</button>
     </div>
 
-    <div class="panel">
-      <h3>シミュレータを追加</h3>
-      <div class="field">
-        <label>シミュレータ名</label>
-        <input id="simName" placeholder="例：二次関数グラフ">
-      </div>
-      <div class="field">
-        <label>説明</label>
-        <textarea id="simDesc" placeholder="このシミュレータについての説明"></textarea>
-      </div>
-      <div class="field">
-        <label>HTMLファイルをアップロード</label>
-        <div class="file-input-wrapper">
-          <input type="file" id="simFileInput" accept=".html,.htm,.jsx,.js" onchange="handleSimFileSelect()">
-          <label for="simFileInput" class="file-input-label">ファイルを選択</label>
-        </div>
-        <div id="simFileSelected" style="font-size:12px; color:var(--ink-soft); margin-top:5px;"></div>
-      </div>
-      <button class="save" onclick="addSimulator()">追加</button>
-    </div>
 
     <div class="panel">
       <h3>資料を追加</h3>
