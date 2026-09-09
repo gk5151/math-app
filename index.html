@@ -173,12 +173,30 @@ header p {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .badge {
   font-size: 11px;
   border: 1px solid #cfd5d8;
   padding: 4px 8px;
+}
+
+.subject-badge {
+  font-size: 11px;
+  border: 1px solid #cfd5d8;
+  padding: 4px 8px;
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  font-weight: bold;
+}
+
+.change-subject-btn {
+  background: #fff;
+  border: 1px solid #cfd5d8;
+  padding: 6px 10px;
+  font-size: 11px;
 }
 
 .logout {
@@ -359,6 +377,13 @@ th, td {
   margin: 10px 0;
 }
 
+.sim iframe {
+  width: 100%;
+  height: 500px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
 canvas {
   width: 100%;
   height: 280px;
@@ -479,6 +504,69 @@ canvas {
   color: var(--red);
 }
 
+/* ===== FILE UPLOAD ===== */
+.file-input-wrapper {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.file-input-wrapper input[type="file"] {
+  position: absolute;
+  left: -9999px;
+}
+
+.file-input-label {
+  display: inline-block;
+  padding: 9px 15px;
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.file-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+}
+
+.file-item {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  padding: 10px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 4px;
+}
+
+.file-item-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.file-item-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.file-item-actions button {
+  font-size: 11px;
+  padding: 4px 8px;
+  border: 1px solid #cfd5d8;
+  background: #fff;
+}
+
+.delete-file-btn {
+  border-color: var(--red) !important;
+  color: var(--red) !important;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 650px) {
   .book {
@@ -539,6 +627,8 @@ canvas {
       <p id="appSubtitle">授業・教材をまとめています。</p>
 
       <div class="user">
+        <span id="subjectBadge" class="subject-badge"></span>
+        <button id="changeSubjectBtn" class="change-subject-btn" onclick="showSubjectChangeModal()">科目変更</button>
         <span id="roleBadge" class="badge"></span>
         <button id="logout" class="logout">退出</button>
       </div>
@@ -548,6 +638,19 @@ canvas {
 
     <main id="main"></main>
 
+  </div>
+</div>
+
+<!-- 科目変更モーダル -->
+<div id="subjectModal" class="hidden" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:1000;">
+  <div style="background:#fff; padding:30px; border-radius:8px; width:min(380px, 100%); box-shadow:0 8px 30px #0002;">
+    <h2 style="margin-top:0;">科目を変更</h2>
+    <div class="subject-select">
+      <button id="mathSubjectModal" class="active">数学</button>
+      <button id="infoSubjectModal">情報</button>
+    </div>
+    <button id="confirmSubjectBtn" class="save" style="width:100%; margin-top:10px;">変更</button>
+    <button onclick="closeSubjectChangeModal()" style="width:100%; margin-top:8px; background:#ccc; color:#333; border:0; padding:9px;">キャンセル</button>
   </div>
 </div>
 
@@ -621,12 +724,13 @@ let data;
 let role = "";
 let page = "home";
 let subject = "math";
+let subjectChangeSelected = "math";
 
 const $ = id => document.getElementById(id);
 
 function loadData() {
   try {
-    data = JSON.parse(localStorage.getItem("study_note_data_v2"));
+    data = JSON.parse(localStorage.getItem("study_note_data_v3"));
   } catch (e) {
     data = null;
   }
@@ -660,7 +764,7 @@ function loadData() {
 }
 
 function save() {
-  localStorage.setItem("study_note_data_v2", JSON.stringify(data));
+  localStorage.setItem("study_note_data_v3", JSON.stringify(data));
 }
 
 function escapeHTML(value) {
@@ -724,10 +828,49 @@ $("logout").onclick = () => {
   location.reload();
 };
 
+function showSubjectChangeModal() {
+  subjectChangeSelected = subject;
+  if (subjectChangeSelected === "math") {
+    $("mathSubjectModal").classList.add("active");
+    $("infoSubjectModal").classList.remove("active");
+  } else {
+    $("infoSubjectModal").classList.add("active");
+    $("mathSubjectModal").classList.remove("active");
+  }
+  $("subjectModal").style.display = "flex";
+}
+
+function closeSubjectChangeModal() {
+  $("subjectModal").style.display = "none";
+}
+
+$("mathSubjectModal").onclick = () => {
+  subjectChangeSelected = "math";
+  $("mathSubjectModal").classList.add("active");
+  $("infoSubjectModal").classList.remove("active");
+};
+
+$("infoSubjectModal").onclick = () => {
+  subjectChangeSelected = "info";
+  $("infoSubjectModal").classList.add("active");
+  $("mathSubjectModal").classList.remove("active");
+};
+
+$("confirmSubjectBtn").onclick = () => {
+  subject = subjectChangeSelected;
+  sessionStorage.setItem("study_note_subject", subject);
+  closeSubjectChangeModal();
+  $("appTitle").textContent = SUBJECTS[subject].name + " 勉強ノート";
+  $("subjectBadge").textContent = SUBJECTS[subject].name;
+  renderNav();
+  render();
+};
+
 function start() {
   $("login").classList.add("hidden");
   $("site").classList.remove("hidden");
   $("appTitle").textContent = SUBJECTS[subject].name + " 勉強ノート";
+  $("subjectBadge").textContent = SUBJECTS[subject].name;
   $("roleBadge").textContent = role === "host" ? "HOST" : "GUEST";
   renderNav();
   render();
@@ -844,6 +987,14 @@ function renderAdmin() {
         <label>説明</label>
         <textarea id="simDesc" placeholder="このシミュレータについての説明"></textarea>
       </div>
+      <div class="field">
+        <label>HTMLファイルをアップロード</label>
+        <div class="file-input-wrapper">
+          <input type="file" id="simFileInput" accept=".html,.htm,.jsx,.js" onchange="handleSimFileSelect()">
+          <label for="simFileInput" class="file-input-label">ファイルを選択</label>
+        </div>
+        <div id="simFileSelected" style="font-size:12px; color:var(--ink-soft); margin-top:5px;"></div>
+      </div>
       <button class="save" onclick="addSimulator()">追加</button>
     </div>
 
@@ -938,7 +1089,14 @@ function renderSimulator() {
         <div class="sim">
           <h3>${escapeHTML(sim.name)}</h3>
           <p>${escapeHTML(sim.desc)}</p>
-          ${role === "host" ? `<button onclick="deleteSimulator(${idx})" style="background:#f0f0f0; color:var(--red); border:1px solid var(--red);">削除</button>` : ""}
+      `;
+      
+      if (sim.fileContent) {
+        html += `<iframe srcdoc="${sim.fileContent.replace(/"/g, '&quot;')}" style="width:100%; height:500px; border:1px solid #ddd; border-radius:4px;"></iframe>`;
+      }
+      
+      html += `
+          ${role === "host" ? `<button onclick="deleteSimulator(${idx})" style="background:#f0f0f0; color:var(--red); border:1px solid var(--red); margin-top:10px;">削除</button>` : ""}
         </div>
       `;
     });
@@ -947,12 +1105,32 @@ function renderSimulator() {
   $("main").innerHTML = html;
 }
 
+let simFileContent = null;
+
+function handleSimFileSelect() {
+  const file = $("simFileInput").files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    simFileContent = e.target.result;
+    $("simFileSelected").textContent = `✓ ${escapeHTML(file.name)} を選択しました`;
+  };
+  reader.readAsText(file);
+}
+
 function renderAkapen() {
   $("main").innerHTML = `
     <button class="back" onclick="go('home')">← 戻る</button>
     <h2 class="section">赤ペンノート</h2>
-    <p style="color: var(--ink-soft);">赤ペンノートはiframeで埋め込まれます。</p>
-    <iframe src="akapen-note.html" style="width:100%; height:600px; border:1px solid var(--border); border-radius:8px;"></iframe>
+    <div class="panel">
+      <h3>手書き計算ノート</h3>
+      <p>指やペンで直接書いてね。計算式・文章問題・図形（寸法つき）、なんでもOK。2本指でつまむと拡大縮小できるよ。書き終わったら「赤ペンで採点」を押してね。</p>
+    </div>
+    <div class="panel">
+      <h3>クイズモード</h3>
+      <p>科目と単元を選んで問題を出そう。答えはこの下に手書きして、「答え合わせ」を押してね。</p>
+    </div>
   `;
 }
 
@@ -1031,10 +1209,18 @@ function addSimulator() {
     return;
   }
 
-  currData.simulators.push({ name, desc, date: new Date().toLocaleDateString("ja-JP") });
+  currData.simulators.push({ 
+    name, 
+    desc, 
+    fileContent: simFileContent || "",
+    date: new Date().toLocaleDateString("ja-JP") 
+  });
   save();
   $("simName").value = "";
   $("simDesc").value = "";
+  $("simFileInput").value = "";
+  $("simFileSelected").textContent = "";
+  simFileContent = null;
   alert("シミュレータを追加しました");
   renderAdmin();
 }
