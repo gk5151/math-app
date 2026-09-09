@@ -753,12 +753,14 @@ let hostUserId = sessionStorage.getItem("study_note_host_user_id") || "";
 const $ = id => document.getElementById(id);
 
 function authHeaders(extra = {}) {
-  const token = accessToken || SUPABASE_PUBLISHABLE_KEY;
-  return {
+  const headers = {
+    // Publishable key は API キーとして apikey にだけ送る。
+    // サインイン済みの場合だけ、ユーザーJWTを Authorization に送る。
     apikey: SUPABASE_PUBLISHABLE_KEY,
-    Authorization: `Bearer ${token}`,
     ...extra
   };
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  return headers;
 }
 
 function explainNetworkError(e, context = "Supabase") {
