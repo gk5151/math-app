@@ -6,6 +6,16 @@
 <title>勉強ノート</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script>
+/* ===== SUPABASE CLOUD CONFIG =====
+   ここにSupabaseのProject URLとanon keyを設定してください。
+   例: https://xxxxxxxx.supabase.co
+*/
+const SUPABASE_URL = "https://dfpqaxzcjqyaciomomuh.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_6NO6x2_8WH1Sy--q_ej0ag_gNmeKScc"; // Project Settings → API Keys の Publishable key
+const SUPABASE_BUCKET = "study-files";
+const CLOUD_ENABLED = SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("YOUR_") && !SUPABASE_ANON_KEY.includes("YOUR_");
+</script>
 <style>
 * { box-sizing: border-box; }
 
@@ -613,7 +623,8 @@ canvas {
       <button id="guestBtn" class="active">ゲスト</button>
     </div>
 
-    <input id="hostPassword" class="hidden" type="password" placeholder="ホストパスワード">
+    <input id="hostEmail" class="hidden" type="email" placeholder="ホスト用メールアドレス" autocomplete="username">
+    <input id="hostPassword" class="hidden" type="password" placeholder="ホスト用パスワード" autocomplete="current-password">
     <button id="enterBtn" class="enter">入室</button>
     <p id="error" class="error"></p>
   </div>
@@ -654,13 +665,7 @@ canvas {
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
-const SUPABASE_PUBLISHABLE_KEY = "YOUR_SUPABASE_PUBLISHABLE_KEY";
-const supabaseClient = (SUPABASE_URL.startsWith("http") && !SUPABASE_PUBLISHABLE_KEY.startsWith("YOUR_")) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
-const CLOUD_ROW_ID = "global";
-
 const SUBJECTS = {
   math: { name: "数学" },
   info: { name: "情報" }
@@ -727,30 +732,144 @@ let role = "";
 let page = "home";
 let subject = "math";
 let subjectChangeSelected = "math";
+let accessToken = sessionStorage.getItem("study_note_access_token") || "";
+let hostUserId = sessionStorage.getItem("study_note_host_user_id") || "";
 
 const $ = id => document.getElementById(id);
 
-function defaultData() { return { math:{items:JSON.parse(JSON.stringify(DEFAULT_ITEMS.math)),note:{date:new Date().toLocaleDateString("ja-JP"),title:"今日の授業",body:"ここに先生のメモを表示できます。"},simulators:[],resources:[],comments:[]}, info:{items:JSON.parse(JSON.stringify(DEFAULT_ITEMS.info)),note:{date:new Date().toLocaleDateString("ja-JP"),title:"今日の授業",body:"ここに先生のメモを表示できます。"},simulators:[],resources:[],comments:[]} }; }
+function authHeaders(extra = {}) {
+  const token = accessToken || SUPABASE_ANON_KEY;
+  return { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, ...extra };
+}
+
+async function loginHost() {
+  if (!CLOUD_ENABLED) throw new Error("SupabaseのProject URLとPublishable keyを設定してください");
+  const email = $("hostEmail").value.trim();
+  const password = $("hostPassword").value;
+  if (!email || !password) throw new Error("ホスト用メールアドレスとパスワードを入力してください");
+
+  const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password })
+  });
+  if (!r.ok) throw new Error("メールアドレスまたはパスワードが違います");
+  const session = await r.json();
+  if (!session.access_token || !session.user?.id) throw new Error("ログイン情報を取得できませんでした");
+
+  accessToken = session.access_token;
+  hostUserId = session.user.id;
+  const hostCheck = await fetch(`${SUPABASE_URL}/rest/v1/host_users?select=user_id&user_id=eq.${encodeURIComponent(hostUserId)}`, {
+    headers: authHeaders()
+  });
+  if (!hostCheck.ok) { accessToken = ""; hostUserId = ""; throw new Error("ホスト権限の確認に失敗しました"); }
+  const rows = await hostCheck.json();
+  if (!rows.length) { accessToken = ""; hostUserId = ""; throw new Error("このアカウントにはホスト権限がありません"); }
+
+  sessionStorage.setItem("study_note_access_token", accessToken);
+  sessionStorage.setItem("study_note_host_user_id", hostUserId);
+}
+
+async function logoutHost() {
+  if (CLOUD_ENABLED && accessToken) {
+    try { await fetch(`${SUPABASE_URL}/auth/v1/logout`, { method: "POST", headers: authHeaders() }); } catch (e) {}
+  }
+  accessToken = ""; hostUserId = "";
+  sessionStorage.removeItem("study_note_access_token");
+  sessionStorage.removeItem("study_note_host_user_id");
+}
+
+function createDefaultData() {
+  return {
+    math: {
+      items: JSON.parse(JSON.stringify(DEFAULT_ITEMS.math)),
+      note: { date: new Date().toLocaleDateString("ja-JP"), title: "今日の授業", body: "ここに先生のメモを表示できます。" },
+      simulators: [], resources: [], comments: []
+    },
+    info: {
+      items: JSON.parse(JSON.stringify(DEFAULT_ITEMS.info)),
+      note: { date: new Date().toLocaleDateString("ja-JP"), title: "今日の授業", body: "ここに先生のメモを表示できます。" },
+      simulators: [], resources: [], comments: []
+    }
+  };
+}
+
+function loadLocalData() {
+  try { return JSON.parse(localStorage.getItem("study_note_data_v3")); } catch (e) { return null; }
+}
+
 async function loadData() {
-  data = defaultData();
-  if (!supabaseClient) { try { data = JSON.parse(localStorage.getItem("study_note_data_v3")) || data; } catch(e) {} return; }
-  const { data: row, error } = await supabaseClient.from("study_note_data").select("data").eq("id", CLOUD_ROW_ID).maybeSingle();
-  if (error) { console.error(error); alert("クラウドデータの読み込みに失敗しました。Supabase設定を確認してください。"); return; }
-  if (row && row.data) data = row.data;
+  data = loadLocalData() || createDefaultData();
+
+  if (!CLOUD_ENABLED) return;
+
+  try {
+    const results = await Promise.all(["math", "info"].map(async (sub) => {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/study_note_data?subject=eq.${sub}&select=data`, {
+        headers: authHeaders()
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const rows = await r.json();
+      return [sub, rows[0] ? rows[0].data : null];
+    }));
+
+    results.forEach(([sub, cloud]) => { if (cloud) data[sub] = cloud; });
+    localStorage.setItem("study_note_data_v3", JSON.stringify(data));
+  } catch (e) {
+    console.warn("クラウド読み込みに失敗。端末保存データを使用します。", e);
+  }
 }
+
 async function save() {
-  if (!supabaseClient) { localStorage.setItem("study_note_data_v3", JSON.stringify(data)); return true; }
-  const { error } = await supabaseClient.from("study_note_data").upsert({id:CLOUD_ROW_ID,data:data,updated_at:new Date().toISOString()});
-  if (error) { console.error(error); alert("保存できませんでした。ホストとしてログインしているか確認してください。"); return false; }
-  return true;
+  localStorage.setItem("study_note_data_v3", JSON.stringify(data));
+  if (!CLOUD_ENABLED) return false;
+
+  try {
+    const curr = data[subject];
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/study_note_data?on_conflict=subject`, {
+      method: "POST",
+      headers: authHeaders({
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal"
+      }),
+      body: JSON.stringify({ subject, data: curr, updated_at: new Date().toISOString() })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    return true;
+  } catch (e) {
+    console.error("クラウド保存失敗", e);
+    alert("クラウドへの保存に失敗しました。Supabase設定と通信状態を確認してください。");
+    return false;
+  }
 }
-async function refreshHostRole() {
-  if (!supabaseClient) return false;
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  if (!user) return false;
-  const { data: host } = await supabaseClient.from("host_users").select("user_id").eq("user_id", user.id).maybeSingle();
-  return !!host;
+
+async function uploadToCloud(file, folder) {
+  if (!CLOUD_ENABLED) throw new Error("Supabaseが設定されていません");
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const path = `${folder}/${Date.now()}_${safeName}`;
+  const r = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${path}`, {
+    method: "POST",
+    headers: authHeaders({
+      "Content-Type": file.type || "application/octet-stream",
+      "x-upsert": "false"
+    }),
+    body: file
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${path}`;
 }
+
+async function deleteCloudFile(url) {
+  if (!CLOUD_ENABLED || !url || !url.includes(`/storage/v1/object/public/${SUPABASE_BUCKET}/`)) return;
+  const path = url.split(`/storage/v1/object/public/${SUPABASE_BUCKET}/`)[1];
+  try {
+    await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${path}`, {
+      method: "DELETE",
+      headers: authHeaders()
+    });
+  } catch (e) { console.warn("クラウドファイル削除失敗", e); }
+}
+
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, m => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -766,24 +885,40 @@ function getCurrentData() {
 }
 
 // ===== LOGIN EVENTS =====
-$("mathSubject").onclick=()=>{subject="math";$("mathSubject").classList.add("active");$("infoSubject").classList.remove("active");};
-$("infoSubject").onclick=()=>{subject="info";$("infoSubject").classList.add("active");$("mathSubject").classList.remove("active");};
-$("hostBtn").onclick=()=>{role="host";$("hostBtn").classList.add("active");$("guestBtn").classList.remove("active");$("hostPassword").classList.remove("hidden");$("hostPassword").placeholder="Supabaseのホストパスワード";$("error").textContent="";};
-$("guestBtn").onclick=()=>{role="guest";$("guestBtn").classList.add("active");$("hostBtn").classList.remove("active");$("hostPassword").classList.add("hidden");$("error").textContent="";};
-$("enterBtn").onclick=async()=>{
-  $("error").textContent="";
-  if(role==="host"){
-    if(!supabaseClient){$("error").textContent="SupabaseのURLとPublishable keyをHTMLに設定してください";return;}
-    const email=prompt("ホスト用メールアドレスを入力してください");
-    if(!email) return;
-    const password=$("hostPassword").value;
-    const {error}=await supabaseClient.auth.signInWithPassword({email,password});
-    if(error){$("error").textContent="ログインに失敗しました";return;}
-    if(!await refreshHostRole()){await supabaseClient.auth.signOut();$("error").textContent="このアカウントはホストとして登録されていません";return;}
-  } else role="guest";
-  sessionStorage.setItem("study_note_role",role);sessionStorage.setItem("study_note_subject",subject);await start();
+$("mathSubject").onclick = () => { subject = "math"; $("mathSubject").classList.add("active"); $("infoSubject").classList.remove("active"); };
+$("infoSubject").onclick = () => { subject = "info"; $("infoSubject").classList.add("active"); $("mathSubject").classList.remove("active"); };
+
+$("hostBtn").onclick = () => {
+  role = "host";
+  $("hostBtn").classList.add("active"); $("guestBtn").classList.remove("active");
+  $("hostEmail").classList.remove("hidden"); $("hostPassword").classList.remove("hidden"); $("error").textContent = "";
 };
-$("logout").onclick=async()=>{if(supabaseClient) await supabaseClient.auth.signOut();sessionStorage.clear();location.reload();};
+$("guestBtn").onclick = () => {
+  role = "guest";
+  $("guestBtn").classList.add("active"); $("hostBtn").classList.remove("active");
+  $("hostEmail").classList.add("hidden"); $("hostPassword").classList.add("hidden"); $("error").textContent = "";
+};
+
+$("enterBtn").onclick = async () => {
+  $("error").textContent = "";
+  try {
+    if (role === "host") await loginHost();
+    role = role || "guest";
+    sessionStorage.setItem("study_note_role", role);
+    sessionStorage.setItem("study_note_subject", subject);
+    start();
+  } catch (e) {
+    console.error(e);
+    $("error").textContent = e.message || "ログインに失敗しました";
+  }
+};
+
+$("logout").onclick = async () => {
+  await logoutHost();
+  sessionStorage.removeItem("study_note_role");
+  sessionStorage.removeItem("study_note_subject");
+  location.reload();
+};
 
 function showSubjectChangeModal() {
   subjectChangeSelected = subject;
@@ -823,7 +958,7 @@ $("confirmSubjectBtn").onclick = () => {
   render();
 };
 
-async function start() {
+function start() {
   $("login").classList.add("hidden");
   $("site").classList.remove("hidden");
   $("appTitle").textContent = SUBJECTS[subject].name + " 勉強ノート";
@@ -894,6 +1029,10 @@ function renderAdmin() {
 
   $("main").innerHTML = `
     <h2 class="section">管理</h2>
+    <div class="panel" style="margin-bottom:15px;">
+      <strong>保存先：</strong> ${CLOUD_ENABLED ? "☁️ クラウド（Supabase）" : "💻 この端末のみ"}
+      ${CLOUD_ENABLED ? "" : `<p style="margin:8px 0 0; color:var(--ink-soft); font-size:12px;">Supabaseを設定すると、ホストが追加したメモ・シミュレータ・資料を他のPC/スマホからも共有できます。</p>`}
+    </div>
 
     <div class="panel">
       <h3>公開設定</h3>
@@ -1056,8 +1195,13 @@ function renderSimulator() {
           <p>${escapeHTML(sim.desc)}</p>
       `;
       
-      if (sim.fileContent) {
+      if (sim.fileUrl) {
+        html += `<iframe src="${escapeHTML(sim.fileUrl)}" style="width:100%; height:500px; border:1px solid #ddd; border-radius:4px;"></iframe>`;
+      } else if (sim.fileContent) {
         html += `<iframe srcdoc="${sim.fileContent.replace(/"/g, '&quot;')}" style="width:100%; height:500px; border:1px solid #ddd; border-radius:4px;"></iframe>`;
+      }
+      if (sim.fileUrl || sim.fileContent) {
+        html += `<button class="sim-open-button" onclick="openSimulator(${idx})">↗ シミュレータを別画面で開く</button>`;
       }
       
       html += `
@@ -1068,6 +1212,19 @@ function renderSimulator() {
   }
 
   $("main").innerHTML = html;
+}
+
+function openSimulator(idx) {
+  const sim = getCurrentData().simulators[idx];
+  if (!sim) return;
+  if (sim.fileUrl) { window.open(sim.fileUrl, "_blank", "noopener"); return; }
+  if (sim.fileContent) {
+    const blob = new Blob([sim.fileContent], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, "_blank");
+    if (!win) { alert("ポップアップがブロックされています。ブラウザの設定を確認してください。"); URL.revokeObjectURL(url); return; }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
 }
 
 let simFileContent = null;
@@ -1114,7 +1271,7 @@ function renderResources() {
             <h3>${escapeHTML(res.name)}</h3>
             <p>${escapeHTML(res.desc)}</p>
             ${res.link ? `<p style="margin-top: 5px;"><a href="${escapeHTML(res.link)}" target="_blank" rel="noopener">🔗 ${escapeHTML(res.link)}</a></p>` : ""}
-            ${res.fileContent ? `<div style="margin-top:8px;"><button class="open" onclick="downloadResourceFile(${i})">📎 ファイルを開く / 保存</button><div style="font-size:11px; color:#999; margin-top:4px;">${escapeHTML(res.fileName || "添付ファイル")}</div></div>` : ""}
+            ${(res.fileContent || res.fileUrl) ? `<div style="margin-top:8px;"><button class="open" onclick="downloadResourceFile(${i})">📎 ファイルを開く / 保存</button><div style="font-size:11px; color:#999; margin-top:4px;">${escapeHTML(res.fileName || "添付ファイル")}</div></div>` : ""}
             <p style="font-size: 11px; color: #999; margin-top: 3px;"><strong>追加日:</strong> ${escapeHTML(res.date)}</p>
           </div>
           <div class="resource-actions">
@@ -1134,7 +1291,8 @@ async function toggleItem(id) {
   currData.items = currData.items.map(item =>
     item.id === id ? { ...item, visible: !item.visible } : item
   );
-  await save();
+  const ok = await save();
+  if (CLOUD_ENABLED && !ok) return;
   renderNav();
   render();
 }
@@ -1146,8 +1304,9 @@ async function saveNote() {
     title: $("noteTitle").value,
     body: $("noteBody").value
   };
-  await save();
-  alert("メモを保存しました");
+  const ok = await save();
+  if (CLOUD_ENABLED && !ok) return;
+  alert(CLOUD_ENABLED ? "メモをクラウドに保存しました" : "メモを保存しました");
   render();
 }
 
@@ -1155,35 +1314,34 @@ async function addSimulator() {
   const currData = getCurrentData();
   const name = $("simName").value.trim();
   const desc = $("simDesc").value.trim();
+  const file = $("simFileInput").files[0];
 
-  if (!name) {
-    alert("シミュレータ名を入力してください");
-    return;
+  if (!name) { alert("シミュレータ名を入力してください"); return; }
+  if (!file) { alert("HTMLファイルを選択してください"); return; }
+
+  try {
+    let fileUrl = "";
+    if (CLOUD_ENABLED) {
+      fileUrl = await uploadToCloud(file, `${subject}/simulators`);
+    }
+    currData.simulators.push({ name, desc, fileContent: CLOUD_ENABLED ? "" : (simFileContent || ""), fileUrl, fileName: file.name, date: new Date().toLocaleDateString("ja-JP") });
+    await save();
+    $("simName").value = ""; $("simDesc").value = ""; $("simFileInput").value = ""; $("simFileSelected").textContent = ""; simFileContent = null;
+    alert(CLOUD_ENABLED ? "シミュレータをクラウドに公開しました" : "シミュレータを追加しました（端末保存）");
+    renderAdmin();
+  } catch (e) {
+    console.error(e); alert("シミュレータのアップロードに失敗しました。\n" + e.message);
   }
-
-  currData.simulators.push({ 
-    name, 
-    desc, 
-    fileContent: simFileContent || "",
-    date: new Date().toLocaleDateString("ja-JP") 
-  });
-  await save();
-  $("simName").value = "";
-  $("simDesc").value = "";
-  $("simFileInput").value = "";
-  $("simFileSelected").textContent = "";
-  simFileContent = null;
-  alert("シミュレータを追加しました");
-  renderAdmin();
 }
 
 async function deleteSimulator(idx) {
   const currData = getCurrentData();
-  if (confirm("このシミュレータを削除しますか？")) {
-    currData.simulators.splice(idx, 1);
-    await save();
-    renderSimulator();
-  }
+  if (!confirm("このシミュレータを削除しますか？")) return;
+  const sim = currData.simulators[idx];
+  currData.simulators.splice(idx, 1);
+  await deleteCloudFile(sim?.fileUrl);
+  await save();
+  renderSimulator();
 }
 
 let resourceFileContent = null;
@@ -1203,16 +1361,14 @@ function handleResourceFileSelect() {
 }
 
 function downloadResourceFile(idx) {
-  const currData = getCurrentData();
-  const res = currData.resources[idx];
-  if (!res || !res.fileContent) return;
-
+  const res = getCurrentData().resources[idx];
+  if (!res) return;
+  const url = res.fileUrl || res.fileContent;
+  if (!url) return;
   const a = document.createElement("a");
-  a.href = res.fileContent;
-  a.download = res.fileName || "resource-file";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  a.href = url; a.target = "_blank"; a.rel = "noopener";
+  if (!res.fileUrl) a.download = res.fileName || "resource-file";
+  document.body.appendChild(a); a.click(); a.remove();
 }
 
 async function addResource() {
@@ -1220,65 +1376,55 @@ async function addResource() {
   const name = $("resName").value.trim();
   const desc = $("resDesc").value.trim();
   const link = $("resLink").value.trim();
+  const file = $("resFileInput").files[0];
 
-  if (!name) {
-    alert("資料名を入力してください");
-    return;
+  if (!name) { alert("資料名を入力してください"); return; }
+  if (!link && !file) { alert("リンクまたはファイルのどちらかを追加してください"); return; }
+
+  try {
+    let fileUrl = "";
+    if (file && CLOUD_ENABLED) fileUrl = await uploadToCloud(file, `${subject}/resources`);
+    currData.resources.push({ name, desc, link, fileContent: file && !CLOUD_ENABLED ? (resourceFileContent || "") : "", fileUrl, fileName: file ? file.name : "", date: new Date().toLocaleDateString("ja-JP") });
+    await save();
+    $("resName").value = ""; $("resDesc").value = ""; $("resLink").value = ""; $("resFileInput").value = ""; $("resFileSelected").textContent = ""; resourceFileContent = null; resourceFileName = "";
+    alert(CLOUD_ENABLED ? "資料をクラウドに公開しました" : "資料を追加しました（端末保存）");
+    renderAdmin();
+  } catch (e) {
+    console.error(e); alert("資料のアップロードに失敗しました。\n" + e.message);
   }
-
-  if (!link && !resourceFileContent) {
-    alert("リンクまたはファイルのどちらかを追加してください");
-    return;
-  }
-
-  currData.resources.push({
-    name,
-    desc,
-    link,
-    fileContent: resourceFileContent || "",
-    fileName: resourceFileName || "",
-    date: new Date().toLocaleDateString("ja-JP")
-  });
-  await save();
-  $("resName").value = "";
-  $("resDesc").value = "";
-  $("resLink").value = "";
-  $("resFileInput").value = "";
-  $("resFileSelected").textContent = "";
-  resourceFileContent = null;
-  resourceFileName = "";
-  alert("資料を追加しました");
-  renderAdmin();
 }
 
 async function deleteResource(i) {
   const currData = getCurrentData();
-  if (confirm("この資料を削除しますか？")) {
-    currData.resources.splice(i, 1);
-    await save();
-    renderResources();
-  }
+  if (!confirm("この資料を削除しますか？")) return;
+  const res = currData.resources[i];
+  currData.resources.splice(i, 1);
+  await deleteCloudFile(res?.fileUrl);
+  await save();
+  renderResources();
 }
 
 // ===== INITIALIZE =====
-(async()=>{
-await loadData();
-const savedRole = sessionStorage.getItem("study_note_role");
-const savedSubject = sessionStorage.getItem("study_note_subject");
+(async function initializeApp() {
+  await loadData();
+  const savedRole = sessionStorage.getItem("study_note_role");
+  const savedSubject = sessionStorage.getItem("study_note_subject");
 
-if (savedRole) {
-  role = savedRole;
-  subject = savedSubject || "math";
-  if (subject === "math") {
-    $("mathSubject").classList.add("active");
-    $("infoSubject").classList.remove("active");
-  } else {
-    $("infoSubject").classList.add("active");
-    $("mathSubject").classList.remove("active");
+  if (savedRole === "guest") {
+    role = "guest";
+    subject = savedSubject || "math";
+    if (subject === "math") { $("mathSubject").classList.add("active"); $("infoSubject").classList.remove("active"); }
+    else { $("infoSubject").classList.add("active"); $("mathSubject").classList.remove("active"); }
+    start();
+  } else if (savedRole === "host" && accessToken && hostUserId && CLOUD_ENABLED) {
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/host_users?select=user_id&user_id=eq.${encodeURIComponent(hostUserId)}`, { headers: authHeaders() });
+      const rows = r.ok ? await r.json() : [];
+      if (rows.length) {
+        role = "host"; subject = savedSubject || "math"; start();
+      } else { await logoutHost(); sessionStorage.removeItem("study_note_role"); }
+    } catch (e) { await logoutHost(); sessionStorage.removeItem("study_note_role"); }
   }
-  if (role === "host" && !(await refreshHostRole())) role = "guest";
-  await start();
-}
 })();
 </script>
 
