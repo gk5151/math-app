@@ -688,59 +688,17 @@ const SUBJECTS = {
 
 const DEFAULT_ITEMS = {
   math: [
-    { id: "formula", title: "公式ノート", description: "数学の公式をまとめます。", visible: true },
     { id: "simulator", title: "シミュレータ", description: "数学のシミュレータをまとめます。", visible: true },
     { id: "practice", title: "練習問題", description: "授業内容に合わせた練習問題をまとめます。", visible: true },
     { id: "resources", title: "資料", description: "授業資料や参考資料をまとめます。", visible: true }
   ],
   info: [
-    { id: "formula", title: "公式ノート", description: "情報の公式・用語をまとめます。", visible: true },
     { id: "simulator", title: "シミュレータ", description: "情報のシミュレータをまとめます。", visible: true },
     { id: "practice", title: "練習問題", description: "授業内容に合わせた練習問題をまとめます。", visible: true },
     { id: "resources", title: "資料", description: "授業資料や参考資料をまとめます。", visible: true }
   ]
 };
 
-const MATH_FORMULAS = [
-  {
-    name: "展開公式（2乗）",
-    tex: "(a\\pm b)^2 = a^2 \\pm 2ab + b^2",
-    note: "「2乗のかたまり」を見たら、まず両端を2乗、真ん中は2倍のかけ算にする。",
-    ex: "(x+3)² を展開しなさい。",
-    ans: "x² + 6x + 9"
-  },
-  {
-    name: "和と差の積",
-    tex: "(a+b)(a-b) = a^2-b^2",
-    note: "「同じ2つの数の和と差」をかけると真ん中の項が消える。",
-    ex: "(x+5)(x-5) を計算しなさい。",
-    ans: "x² − 25"
-  },
-  {
-    name: "2次方程式の解の公式",
-    tex: "x=\\dfrac{-b\\pm\\sqrt{b^2-4ac}}{2a}",
-    note: "因数分解できない2次方程式でも必ず解ける「最終手段」の公式。",
-    ex: "x² − 3x + 1 = 0 を解きなさい。",
-    ans: "x = (3 ± √5) / 2"
-  }
-];
-
-const INFO_FORMULAS = [
-  {
-    name: "情報: ビット",
-    tex: "1\\text{ bit} = 2\\text{ states}",
-    note: "1ビットで表現できる情報は2通り（0または1）。",
-    ex: "8ビットで最大何通りの情報を表現できるか。",
-    ans: "2⁸ = 256通り"
-  },
-  {
-    name: "情報: バイト",
-    tex: "1\\text{ byte} = 8\\text{ bits}",
-    note: "コンピュータの基本単位。1バイト = 8ビット。",
-    ex: "1MBは何バイトか。",
-    ans: "1MB = 1,000,000バイト（10進法）"
-  }
-];
 
 let data;
 let role = "";
