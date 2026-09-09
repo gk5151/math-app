@@ -1079,7 +1079,7 @@ function renderAdmin() {
   $("main").innerHTML = `
     <h2 class="section">管理</h2>
     <div class="panel" style="margin-bottom:15px;">
-      <strong>保存先：</strong> ${CLOUD_ENABLED ? "☁️ クラウド（Supabase）" : "💻 この端末のみ"}
+      <strong>保存先：</strong> ${CLOUD_ENABLED ? "クラウド（Supabase）" : " この端末のみ"}
       ${CLOUD_ENABLED ? "" : `<p style="margin:8px 0 0; color:var(--ink-soft); font-size:12px;">Supabaseを設定すると、ホストが追加したメモ・シミュレータ・資料を他のPC/スマホからも共有できます。</p>`}
     </div>
 
@@ -1153,15 +1153,6 @@ function renderAdmin() {
 function renderFormula() {
   const subject_label = subject === "math" ? "数学" : "情報";
   const formulas = subject === "math" ? MATH_FORMULAS : INFO_FORMULAS;
-
-  let html = `
-    <button class="back" onclick="go('home')">← 戻る</button>
-    <h2 class="section">${subject_label}公式</h2>
-    <div class="field" style="margin-bottom: 20px;">
-      <input id="formulaSearch" type="text" placeholder="公式を検索..." onkeyup="filterFormulas()">
-    </div>
-    <div id="formulaList">
-  `;
 
   formulas.forEach((f, i) => {
     html += `
