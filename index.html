@@ -699,7 +699,6 @@ const DEFAULT_ITEMS = {
   ]
 };
 
-
 let data;
 let role = "";
 let page = "home";
@@ -1041,7 +1040,6 @@ function renderNav() {
 function render() {
   if (page === "home") renderHome();
   else if (page === "admin" && role === "host") renderAdmin();
-  else if (page === "formula") renderFormula();
   else if (page === "simulator") renderSimulator();
   else if (page === "akapen") renderAkapen();
   else if (page === "practice") renderPractice();
@@ -1079,7 +1077,7 @@ function renderAdmin() {
   $("main").innerHTML = `
     <h2 class="section">管理</h2>
     <div class="panel" style="margin-bottom:15px;">
-      <strong>保存先：</strong> ${CLOUD_ENABLED ? "クラウド（Supabase）" : " この端末のみ"}
+      <strong>保存先：</strong> ${CLOUD_ENABLED ? "☁️ クラウド（Supabase）" : "💻 この端末のみ"}
       ${CLOUD_ENABLED ? "" : `<p style="margin:8px 0 0; color:var(--ink-soft); font-size:12px;">Supabaseを設定すると、ホストが追加したメモ・シミュレータ・資料を他のPC/スマホからも共有できます。</p>`}
     </div>
 
@@ -1091,7 +1089,7 @@ function renderAdmin() {
           <th>状態</th>
           <th>操作</th>
         </tr>
-        ${currData.items.map(item => `
+        ${currData.items.filter(item => item.id !== "formula").map(item => `
           <tr>
             <td>${item.title}</td>
             <td>${item.visible ? "公開" : "非公開"}</td>
@@ -1122,6 +1120,26 @@ function renderAdmin() {
       <button class="save" onclick="saveNote()">保存</button>
     </div>
 
+    <div class="panel">
+      <h3>シミュレータを追加</h3>
+      <div class="field">
+        <label>シミュレータ名</label>
+        <input id="simName" placeholder="例：二次関数グラフ">
+      </div>
+      <div class="field">
+        <label>説明</label>
+        <textarea id="simDesc" placeholder="このシミュレータについての説明"></textarea>
+      </div>
+      <div class="field">
+        <label>HTMLファイルをアップロード</label>
+        <div class="file-input-wrapper">
+          <input type="file" id="simFileInput" accept=".html,.htm,.jsx,.js" onchange="handleSimFileSelect()">
+          <label for="simFileInput" class="file-input-label">ファイルを選択</label>
+        </div>
+        <div id="simFileSelected" style="font-size:12px; color:var(--ink-soft); margin-top:5px;"></div>
+      </div>
+      <button class="save" onclick="addSimulator()">追加</button>
+    </div>
 
     <div class="panel">
       <h3>資料を追加</h3>
@@ -1150,39 +1168,6 @@ function renderAdmin() {
   `;
 }
 
-function renderFormula() {
-  const subject_label = subject === "math" ? "数学" : "情報";
-  const formulas = subject === "math" ? MATH_FORMULAS : INFO_FORMULAS;
-
-  formulas.forEach((f, i) => {
-    html += `
-      <div class="formula-card" data-index="${i}" onclick="toggleFormula(${i})">
-        <div class="name">
-          <span>${escapeHTML(f.name)}</span>
-          <span class="plus">+</span>
-        </div>
-        <div class="formula-tex"><span class="tex-${i}"></span></div>
-        <div class="formula-details">
-          <div class="formula-inner">
-            <p><strong>解説：</strong>${escapeHTML(f.note)}</p>
-            <p><strong>例：</strong>${escapeHTML(f.ex)}</p>
-            <p><strong>答え：</strong>${escapeHTML(f.ans)}</p>
-          </div>
-        </div>
-      </div>
-    `;
-  });
-
-  html += `</div>`;
-  $("main").innerHTML = html;
-
-  formulas.forEach((f, i) => {
-    try {
-      const el = document.querySelector(`.tex-${i}`);
-      if (el) katex.render(f.tex, el, { throwOnError: false });
-    } catch (e) {}
-  });
-}
 
 function filterFormulas() {
   const q = $("formulaSearch").value.toLowerCase();
