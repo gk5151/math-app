@@ -666,14 +666,12 @@ const DEFAULT_ITEMS = {
   math: [
     { id: "formula", title: "公式ノート", description: "数学の公式をまとめます。", visible: true },
     { id: "simulator", title: "シミュレータ", description: "数学のシミュレータをまとめます。", visible: true },
-    { id: "akapen", title: "赤ペンノート", description: "問題を解いて、答え合わせや復習をします。", visible: true },
     { id: "practice", title: "練習問題", description: "授業内容に合わせた練習問題をまとめます。", visible: true },
     { id: "resources", title: "資料", description: "授業資料や参考資料をまとめます。", visible: true }
   ],
   info: [
     { id: "formula", title: "公式ノート", description: "情報の公式・用語をまとめます。", visible: true },
     { id: "simulator", title: "シミュレータ", description: "情報のシミュレータをまとめます。", visible: true },
-    { id: "akapen", title: "赤ペンノート", description: "問題を解いて、答え合わせや復習をします。", visible: true },
     { id: "practice", title: "練習問題", description: "授業内容に合わせた練習問題をまとめます。", visible: true },
     { id: "resources", title: "資料", description: "授業資料や参考資料をまとめます。", visible: true }
   ]
@@ -1119,20 +1117,6 @@ function handleSimFileSelect() {
   reader.readAsText(file);
 }
 
-function renderAkapen() {
-  $("main").innerHTML = `
-    <button class="back" onclick="go('home')">← 戻る</button>
-    <h2 class="section">赤ペンノート</h2>
-    <div class="panel">
-      <h3>手書き計算ノート</h3>
-      <p>指やペンで直接書いてね。計算式・文章問題・図形（寸法つき）、なんでもOK。2本指でつまむと拡大縮小できるよ。書き終わったら「赤ペンで採点」を押してね。</p>
-    </div>
-    <div class="panel">
-      <h3>クイズモード</h3>
-      <p>科目と単元を選んで問題を出そう。答えはこの下に手書きして、「答え合わせ」を押してね。</p>
-    </div>
-  `;
-}
 
 function renderPractice() {
   $("main").innerHTML = `
