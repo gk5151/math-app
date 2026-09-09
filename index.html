@@ -1007,8 +1007,16 @@ function renderAdmin() {
         <textarea id="resDesc" placeholder="資料についての説明"></textarea>
       </div>
       <div class="field">
-        <label>リンクまたはURL</label>
+        <label>リンクまたはURL（任意）</label>
         <input id="resLink" type="url" placeholder="https://example.com">
+      </div>
+      <div class="field">
+        <label>ファイルを置く（ホストのみ）</label>
+        <div class="file-input-wrapper">
+          <input type="file" id="resFileInput" onchange="handleResourceFileSelect()">
+          <label for="resFileInput" class="file-input-label">ファイルを選択</label>
+        </div>
+        <div id="resFileSelected" style="font-size:12px; color:var(--ink-soft); margin-top:5px;"></div>
       </div>
       <button class="save" onclick="addResource()">追加</button>
     </div>
@@ -1146,7 +1154,8 @@ function renderResources() {
           <div class="resource-info">
             <h3>${escapeHTML(res.name)}</h3>
             <p>${escapeHTML(res.desc)}</p>
-            <p style="margin-top: 5px;"><a href="${escapeHTML(res.link)}" target="_blank" rel="noopener">📎 ${escapeHTML(res.link)}</a></p>
+            ${res.link ? `<p style="margin-top: 5px;"><a href="${escapeHTML(res.link)}" target="_blank" rel="noopener">🔗 ${escapeHTML(res.link)}</a></p>` : ""}
+            ${res.fileContent ? `<div style="margin-top:8px;"><button class="open" onclick="downloadResourceFile(${i})">📎 ファイルを開く / 保存</button><div style="font-size:11px; color:#999; margin-top:4px;">${escapeHTML(res.fileName || "添付ファイル")}</div></div>` : ""}
             <p style="font-size: 11px; color: #999; margin-top: 3px;"><strong>追加日:</strong> ${escapeHTML(res.date)}</p>
           </div>
           <div class="resource-actions">
@@ -1218,27 +1227,67 @@ function deleteSimulator(idx) {
   }
 }
 
+let resourceFileContent = null;
+let resourceFileName = "";
+
+function handleResourceFileSelect() {
+  const file = $("resFileInput").files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    resourceFileContent = e.target.result;
+    resourceFileName = file.name;
+    $("resFileSelected").textContent = `✓ ${escapeHTML(file.name)} を選択しました`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function downloadResourceFile(idx) {
+  const currData = getCurrentData();
+  const res = currData.resources[idx];
+  if (!res || !res.fileContent) return;
+
+  const a = document.createElement("a");
+  a.href = res.fileContent;
+  a.download = res.fileName || "resource-file";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
 function addResource() {
   const currData = getCurrentData();
   const name = $("resName").value.trim();
   const desc = $("resDesc").value.trim();
   const link = $("resLink").value.trim();
 
-  if (!name || !link) {
-    alert("資料名とリンクを入力してください");
+  if (!name) {
+    alert("資料名を入力してください");
     return;
   }
 
-  currData.resources.push({ 
-    name, 
-    desc, 
-    link, 
-    date: new Date().toLocaleDateString("ja-JP") 
+  if (!link && !resourceFileContent) {
+    alert("リンクまたはファイルのどちらかを追加してください");
+    return;
+  }
+
+  currData.resources.push({
+    name,
+    desc,
+    link,
+    fileContent: resourceFileContent || "",
+    fileName: resourceFileName || "",
+    date: new Date().toLocaleDateString("ja-JP")
   });
   save();
   $("resName").value = "";
   $("resDesc").value = "";
   $("resLink").value = "";
+  $("resFileInput").value = "";
+  $("resFileSelected").textContent = "";
+  resourceFileContent = null;
+  resourceFileName = "";
   alert("資料を追加しました");
   renderAdmin();
 }
