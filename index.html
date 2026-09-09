@@ -8,13 +8,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script>
 /* ===== SUPABASE CLOUD CONFIG =====
-   ここにSupabaseのProject URLとanon keyを設定してください。
+   ここにSupabaseのProject URLとPublishable keyを設定してください。
    例: https://xxxxxxxx.supabase.co
 */
 const SUPABASE_URL = "https://dfpqaxzcjqyaciomomuh.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_6NO6x2_8WH1Sy--q_ej0ag_gNmeKScc"; // Project Settings → API Keys の Publishable key
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_6NO6x2_8WH1Sy--q_ej0ag_gNmeKScc"; // Project Settings → API Keys の Publishable key
 const SUPABASE_BUCKET = "study-files";
-const CLOUD_ENABLED = SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("YOUR_") && !SUPABASE_ANON_KEY.includes("YOUR_");
+const CLOUD_ENABLED = SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("YOUR_") && !SUPABASE_PUBLISHABLE_KEY.includes("YOUR_");
 </script>
 <style>
 * { box-sizing: border-box; }
@@ -148,6 +148,20 @@ button {
   color: var(--red) !important;
   margin-top: 10px !important;
 }
+
+.cloud-status {
+  margin-top: 8px;
+  padding: 9px 10px;
+  border: 1px solid #d8dfe1;
+  background: #f7f7f7;
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.cloud-status.ok { border-left: 3px solid #5f8064; }
+.cloud-status.bad { border-left: 3px solid var(--red); color: var(--red); }
 
 /* ===== NOTEBOOK ===== */
 .book {
@@ -627,6 +641,7 @@ canvas {
     <input id="hostPassword" class="hidden" type="password" placeholder="ホスト用パスワード" autocomplete="current-password">
     <button id="enterBtn" class="enter">入室</button>
     <p id="error" class="error"></p>
+    <div id="cloudStatus" class="cloud-status">クラウド接続を確認中…</div>
   </div>
 </section>
 
@@ -738,8 +753,80 @@ let hostUserId = sessionStorage.getItem("study_note_host_user_id") || "";
 const $ = id => document.getElementById(id);
 
 function authHeaders(extra = {}) {
-  const token = accessToken || SUPABASE_ANON_KEY;
-  return { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, ...extra };
+  const token = accessToken || SUPABASE_PUBLISHABLE_KEY;
+  return {
+    apikey: SUPABASE_PUBLISHABLE_KEY,
+    Authorization: `Bearer ${token}`,
+    ...extra
+  };
+}
+
+function explainNetworkError(e, context = "Supabase") {
+  const msg = String(e?.message || e || "不明なエラー");
+  if (location.protocol === "file:") {
+    return `${context}に接続できませんでした。現在HTMLを直接開いています。GitHub Pagesの https://... から開いて再試行してください。\n元のエラー: ${msg}`;
+  }
+  if (/Failed to fetch|NetworkError|Load failed|CORS/i.test(msg)) {
+    return `${context}に接続できませんでした。Project URL・Publishable key・ネットワーク/CORSを確認してください。\n元のエラー: ${msg}`;
+  }
+  return msg;
+}
+
+async function cloudFetch(url, options = {}, context = "Supabase") {
+  if (!CLOUD_ENABLED) throw new Error("Supabaseの設定がありません。");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch(url, {
+      mode: "cors",
+      cache: "no-store",
+      ...options,
+      signal: controller.signal
+    });
+    if (!response.ok) {
+      let detail = "";
+      try { detail = await response.text(); } catch (_) {}
+      throw new Error(`${context} HTTP ${response.status}${detail ? `: ${detail}` : ""}`);
+    }
+    return response;
+  } catch (e) {
+    if (e?.name === "AbortError") {
+      throw new Error(`${context}への接続がタイムアウトしました（15秒）。`);
+    }
+    throw new Error(explainNetworkError(e, context));
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function setCloudStatus(message, ok = null) {
+  const el = $("cloudStatus");
+  if (!el) return;
+  el.textContent = message;
+  el.classList.toggle("ok", ok === true);
+  el.classList.toggle("bad", ok === false);
+}
+
+async function checkCloudConnection() {
+  if (!CLOUD_ENABLED) {
+    setCloudStatus("Supabase未設定", false);
+    return false;
+  }
+  try {
+    // 軽いSELECTで、URL・Publishable key・REST API・RLSの読み取り経路をまとめて確認
+    const r = await cloudFetch(
+      `${SUPABASE_URL}/rest/v1/study_note_data?select=subject&limit=1`,
+      { headers: authHeaders() },
+      "Supabase接続確認"
+    );
+    await r.json();
+    setCloudStatus("クラウド接続OK", true);
+    return true;
+  } catch (e) {
+    setCloudStatus(e.message || "クラウド接続に失敗しました", false);
+    console.error(e);
+    return false;
+  }
 }
 
 async function loginHost() {
@@ -748,23 +835,24 @@ async function loginHost() {
   const password = $("hostPassword").value;
   if (!email || !password) throw new Error("ホスト用メールアドレスとパスワードを入力してください");
 
-  const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+  const r = await cloudFetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
     method: "POST",
-    headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+    headers: { apikey: SUPABASE_PUBLISHABLE_KEY, "Content-Type": "application/json" },
     body: JSON.stringify({ email, password })
-  });
-  if (!r.ok) throw new Error("メールアドレスまたはパスワードが違います");
+  }, "ホストログイン");
   const session = await r.json();
   if (!session.access_token || !session.user?.id) throw new Error("ログイン情報を取得できませんでした");
 
   accessToken = session.access_token;
   hostUserId = session.user.id;
-  const hostCheck = await fetch(`${SUPABASE_URL}/rest/v1/host_users?select=user_id&user_id=eq.${encodeURIComponent(hostUserId)}`, {
+  const hostCheck = await cloudFetch(`${SUPABASE_URL}/rest/v1/host_users?select=user_id&user_id=eq.${encodeURIComponent(hostUserId)}`, {
     headers: authHeaders()
-  });
-  if (!hostCheck.ok) { accessToken = ""; hostUserId = ""; throw new Error("ホスト権限の確認に失敗しました"); }
+  }, "ホスト権限確認");
   const rows = await hostCheck.json();
-  if (!rows.length) { accessToken = ""; hostUserId = ""; throw new Error("このアカウントにはホスト権限がありません"); }
+  if (!rows.length) {
+    accessToken = ""; hostUserId = "";
+    throw new Error("このアカウントにはホスト権限がありません");
+  }
 
   sessionStorage.setItem("study_note_access_token", accessToken);
   sessionStorage.setItem("study_note_host_user_id", hostUserId);
@@ -772,7 +860,9 @@ async function loginHost() {
 
 async function logoutHost() {
   if (CLOUD_ENABLED && accessToken) {
-    try { await fetch(`${SUPABASE_URL}/auth/v1/logout`, { method: "POST", headers: authHeaders() }); } catch (e) {}
+    try {
+      await cloudFetch(`${SUPABASE_URL}/auth/v1/logout`, { method: "POST", headers: authHeaders() }, "ログアウト");
+    } catch (e) {}
   }
   accessToken = ""; hostUserId = "";
   sessionStorage.removeItem("study_note_access_token");
@@ -800,45 +890,42 @@ function loadLocalData() {
 
 async function loadData() {
   data = loadLocalData() || createDefaultData();
+  if (!CLOUD_ENABLED) return false;
 
-  if (!CLOUD_ENABLED) return;
+  const results = await Promise.all(["math", "info"].map(async (sub) => {
+    const r = await cloudFetch(`${SUPABASE_URL}/rest/v1/study_note_data?subject=eq.${encodeURIComponent(sub)}&select=data`, {
+      headers: authHeaders()
+    }, `データ読み込み（${SUBJECTS[sub].name}）`);
+    const rows = await r.json();
+    return [sub, rows[0] ? rows[0].data : null];
+  }));
 
-  try {
-    const results = await Promise.all(["math", "info"].map(async (sub) => {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/study_note_data?subject=eq.${sub}&select=data`, {
-        headers: authHeaders()
-      });
-      if (!r.ok) throw new Error(await r.text());
-      const rows = await r.json();
-      return [sub, rows[0] ? rows[0].data : null];
-    }));
-
-    results.forEach(([sub, cloud]) => { if (cloud) data[sub] = cloud; });
-    localStorage.setItem("study_note_data_v3", JSON.stringify(data));
-  } catch (e) {
-    console.warn("クラウド読み込みに失敗。端末保存データを使用します。", e);
-  }
+  results.forEach(([sub, cloud]) => { if (cloud) data[sub] = cloud; });
+  localStorage.setItem("study_note_data_v3", JSON.stringify(data));
+  setCloudStatus("クラウド接続OK・共有データを読み込みました", true);
+  return true;
 }
 
 async function save() {
   localStorage.setItem("study_note_data_v3", JSON.stringify(data));
-  if (!CLOUD_ENABLED) return false;
+  if (!CLOUD_ENABLED) return true;
 
   try {
     const curr = data[subject];
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/study_note_data?on_conflict=subject`, {
+    await cloudFetch(`${SUPABASE_URL}/rest/v1/study_note_data?on_conflict=subject`, {
       method: "POST",
       headers: authHeaders({
         "Content-Type": "application/json",
         Prefer: "resolution=merge-duplicates,return=minimal"
       }),
       body: JSON.stringify({ subject, data: curr, updated_at: new Date().toISOString() })
-    });
-    if (!r.ok) throw new Error(await r.text());
+    }, `データ保存（${SUBJECTS[subject].name}）`);
+    setCloudStatus("クラウド保存OK", true);
     return true;
   } catch (e) {
     console.error("クラウド保存失敗", e);
-    alert("クラウドへの保存に失敗しました。Supabase設定と通信状態を確認してください。");
+    setCloudStatus(e.message || "クラウド保存に失敗しました", false);
+    alert("クラウドへの保存に失敗しました。\n\n" + e.message);
     return false;
   }
 }
@@ -847,15 +934,14 @@ async function uploadToCloud(file, folder) {
   if (!CLOUD_ENABLED) throw new Error("Supabaseが設定されていません");
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const path = `${folder}/${Date.now()}_${safeName}`;
-  const r = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${path}`, {
+  await cloudFetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${path}`, {
     method: "POST",
     headers: authHeaders({
       "Content-Type": file.type || "application/octet-stream",
       "x-upsert": "false"
     }),
     body: file
-  });
-  if (!r.ok) throw new Error(await r.text());
+  }, "ファイルアップロード");
   return `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${path}`;
 }
 
@@ -863,11 +949,14 @@ async function deleteCloudFile(url) {
   if (!CLOUD_ENABLED || !url || !url.includes(`/storage/v1/object/public/${SUPABASE_BUCKET}/`)) return;
   const path = url.split(`/storage/v1/object/public/${SUPABASE_BUCKET}/`)[1];
   try {
-    await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${path}`, {
+    await cloudFetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${path}`, {
       method: "DELETE",
       headers: authHeaders()
-    });
-  } catch (e) { console.warn("クラウドファイル削除失敗", e); }
+    }, "ファイル削除");
+  } catch (e) {
+    console.warn("クラウドファイル削除失敗", e);
+    setCloudStatus(e.message || "ファイル削除に失敗しました", false);
+  }
 }
 
 function escapeHTML(value) {
@@ -1406,7 +1495,15 @@ async function deleteResource(i) {
 
 // ===== INITIALIZE =====
 (async function initializeApp() {
-  await loadData();
+  try {
+    await loadData();
+  } catch (e) {
+    console.error("クラウド初期読み込み失敗", e);
+    setCloudStatus(e.message || "クラウド読み込みに失敗しました", false);
+    // 表示自体は止めず、ローカルのバックアップデータで起動します。
+    // ただし赤い接続状態を表示して「共有できている」と誤認しないようにします。
+  }
+  await checkCloudConnection();
   const savedRole = sessionStorage.getItem("study_note_role");
   const savedSubject = sessionStorage.getItem("study_note_subject");
 
@@ -1418,8 +1515,8 @@ async function deleteResource(i) {
     start();
   } else if (savedRole === "host" && accessToken && hostUserId && CLOUD_ENABLED) {
     try {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/host_users?select=user_id&user_id=eq.${encodeURIComponent(hostUserId)}`, { headers: authHeaders() });
-      const rows = r.ok ? await r.json() : [];
+      const r = await cloudFetch(`${SUPABASE_URL}/rest/v1/host_users?select=user_id&user_id=eq.${encodeURIComponent(hostUserId)}`, { headers: authHeaders() }, "ホストセッション確認");
+      const rows = await r.json();
       if (rows.length) {
         role = "host"; subject = savedSubject || "math"; start();
       } else { await logoutHost(); sessionStorage.removeItem("study_note_role"); }
