@@ -842,7 +842,7 @@ async function uploadToCloud(file, folder) {
   await cloudFetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${path}`, {
     method: "POST",
     headers: authHeaders({
-      "Content-Type": file.type || "application/octet-stream",
+      "Content-Type": /\.html?$/i.test(file.name) ? "text/html;charset=utf-8" : (file.type || "application/octet-stream"),
       "x-upsert": "false"
     }),
     body: file
@@ -1114,7 +1114,7 @@ function renderSimulator() {
         <div class="sim">
           <h3>${escapeHTML(sim.name)}</h3>
           <p>${escapeHTML(sim.desc)}</p>
-          ${sim.fileUrl ? `<iframe src="${escapeHTML(sim.fileUrl)}" style="width:100%; height:500px; border:1px solid #ddd; border-radius:4px;"></iframe>` : ""}
+          ${sim.fileUrl ? `<iframe id="simFrame_${idx}" style="width:100%; height:500px; border:1px solid #ddd; border-radius:4px;"></iframe>` : ""}
           ${sim.fileContent ? `<iframe srcdoc="${sim.fileContent.replace(/"/g, '&quot;')}" style="width:100%; height:500px; border:1px solid #ddd; border-radius:4px;"></iframe>` : ""}
           ${(sim.fileUrl || sim.fileContent) ? `<button class="sim-open-button" onclick="openSimulator(${idx})">↗ シミュレータを別画面で開く</button>` : ""}
           ${role === "host" ? `
@@ -1129,12 +1129,52 @@ function renderSimulator() {
   }
 
   $("main").innerHTML = html;
+
+  sims.forEach((sim) => {
+    if (sim.fileUrl) {
+      const idx = currData.simulators.indexOf(sim);
+      loadSimulatorFrame(idx, sim.fileUrl);
+    }
+  });
 }
 
-function openSimulator(idx) {
+async function loadSimulatorFrame(idx, fileUrl) {
+  const frame = document.getElementById(`simFrame_${idx}`);
+  if (!frame) return;
+  try {
+    const res = await fetch(fileUrl, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const blob = new Blob([text], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    frame.onload = () => setTimeout(() => URL.revokeObjectURL(url), 60000);
+    frame.src = url;
+  } catch (e) {
+    console.error("シミュレータ読み込み失敗", e);
+    frame.src = fileUrl;
+  }
+}
+
+async function openSimulator(idx) {
   const sim = getCurrentData().simulators[idx];
   if (!sim) return;
-  if (sim.fileUrl) { window.open(sim.fileUrl, "_blank", "noopener"); return; }
+  if (sim.fileUrl) {
+    try {
+      const res = await fetch(sim.fileUrl, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      const blob = new Blob([text], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const win = window.open(url, "_blank");
+      if (!win) { alert("ポップアップがブロックされています。ブラウザの設定を確認してください。"); URL.revokeObjectURL(url); return; }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      return;
+    } catch (e) {
+      console.error("シミュレータを開けません", e);
+      window.open(sim.fileUrl, "_blank", "noopener");
+      return;
+    }
+  }
   if (sim.fileContent) {
     const blob = new Blob([sim.fileContent], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
