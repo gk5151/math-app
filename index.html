@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>勉強ノート</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script>
 /* ===== SUPABASE CLOUD CONFIG =====
    ここにSupabaseのProject URLとPublishable keyを設定してください。
@@ -417,71 +415,6 @@ canvas {
   margin: 10px 0;
 }
 
-/* ===== FORMULAS ===== */
-.formula-card {
-  background: #fff;
-  border: 1.5px solid var(--ink);
-  border-left: 4px solid var(--red);
-  border-radius: 2px 8px 8px 2px;
-  padding: 12px 14px 13px;
-  box-shadow: 0 1px 0 rgba(32,40,31,0.06);
-  cursor: pointer;
-  transition: transform .12s ease, box-shadow .12s ease;
-  margin-bottom: 10px;
-}
-
-.formula-card:hover {
-  transform: translate(1px, -1px);
-  box-shadow: 2px 3px 0 #d9d2bc;
-}
-
-.formula-card .name {
-  font-family: 'Noto Serif JP', serif;
-  font-weight: 700;
-  font-size: .86rem;
-  margin: 0 0 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-
-.formula-card .name .plus {
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--ink-soft);
-  font-size: .9rem;
-  transition: transform .15s ease;
-  flex: none;
-}
-
-.formula-card.open .name .plus {
-  transform: rotate(45deg);
-  color: var(--accent);
-}
-
-.formula-tex {
-  font-size: 1.02rem;
-  overflow-x: auto;
-  padding: 4px 0 2px;
-}
-
-.formula-details {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height .25s ease;
-}
-
-.formula-card.open .formula-details {
-  max-height: 700px;
-}
-
-.formula-inner {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px dashed #d9d2bc;
-  font-size: .85rem;
-  line-height: 1.7;
-}
 
 /* ===== RESOURCES ===== */
 .resource-list {
@@ -668,7 +601,7 @@ canvas {
 </div>
 
 <!-- 科目変更モーダル -->
-<div id="subjectModal" class="hidden" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:1000;">
+<div id="subjectModal" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:1000;">
   <div style="background:#fff; padding:30px; border-radius:8px; width:min(380px, 100%); box-shadow:0 8px 30px #0002;">
     <h2 style="margin-top:0;">科目を変更</h2>
     <div class="subject-select">
@@ -689,15 +622,14 @@ const SUBJECTS = {
 const DEFAULT_ITEMS = {
   math: [
     { id: "simulator", title: "シミュレータ", description: "数学のシミュレータをまとめます。", visible: true },
-    { id: "practice", title: "練習問題", description: "授業内容に合わせた練習問題をまとめます。", visible: true },
     { id: "resources", title: "資料", description: "授業資料や参考資料をまとめます。", visible: true }
   ],
   info: [
     { id: "simulator", title: "シミュレータ", description: "情報のシミュレータをまとめます。", visible: true },
-    { id: "practice", title: "練習問題", description: "授業内容に合わせた練習問題をまとめます。", visible: true },
     { id: "resources", title: "資料", description: "授業資料や参考資料をまとめます。", visible: true }
   ]
 };
+
 
 let data;
 let role = "";
@@ -849,11 +781,6 @@ function loadLocalData() {
 
 async function loadData() {
   data = loadLocalData() || createDefaultData();
-  ["math", "info"].forEach(sub => {
-    if (data[sub]?.items) {
-      data[sub].items = data[sub].items.filter(item => item.id !== "formula" && item.title !== "公式ノート" && item.title !== "公式");
-    }
-  });
   if (!CLOUD_ENABLED) return false;
 
   const results = await Promise.all(["math", "info"].map(async (sub) => {
@@ -866,13 +793,19 @@ async function loadData() {
 
   results.forEach(([sub, cloud]) => { if (cloud) data[sub] = cloud; });
 
-  // 旧データに残っている「公式」教材も表示対象から完全に除外
+  // 旧データに残っている不要な教材項目を表示対象から完全除外。
   ["math", "info"].forEach(sub => {
-    if (data[sub]?.items) {
-      data[sub].items = data[sub].items.filter(item => item.id !== "formula" && item.title !== "公式ノート" && item.title !== "公式");
-    }
+    data[sub] = data[sub] || createDefaultData()[sub];
+    data[sub].items = (data[sub].items || []).filter(item => item.id === "simulator" || item.id === "resources");
+    const defaults = DEFAULT_ITEMS[sub];
+    defaults.forEach(def => {
+      if (!data[sub].items.some(item => item.id === def.id)) data[sub].items.push({ ...def });
+    });
+    data[sub].simulators = Array.isArray(data[sub].simulators) ? data[sub].simulators : [];
+    data[sub].resources = Array.isArray(data[sub].resources) ? data[sub].resources : [];
+    data[sub].simulators.forEach(sim => { if (sim.visible === undefined) sim.visible = true; });
+    data[sub].resources.forEach(res => { if (res.visible === undefined) res.visible = true; });
   });
-
   localStorage.setItem("study_note_data_v3", JSON.stringify(data));
   setCloudStatus("クラウド接続OK・共有データを読み込みました", true);
   return true;
@@ -938,7 +871,7 @@ function escapeHTML(value) {
 }
 
 function visibleItems() {
-  return data[subject].items.filter(item => item.id !== "formula" && item.title !== "公式ノート" && item.title !== "公式" && item.visible);
+  return data[subject].items.filter(item => (item.id === "simulator" || item.id === "resources") && item.visible);
 }
 
 function getCurrentData() {
@@ -1030,7 +963,7 @@ function start() {
 }
 
 function go(nextPage) {
-  page = nextPage === "formula" ? "home" : nextPage;
+  page = nextPage;
   renderNav();
   render();
   window.scrollTo(0, 0);
@@ -1054,8 +987,6 @@ function render() {
   if (page === "home") renderHome();
   else if (page === "admin" && role === "host") renderAdmin();
   else if (page === "simulator") renderSimulator();
-  else if (page === "akapen") renderAkapen();
-  else if (page === "practice") renderPractice();
   else if (page === "resources") renderResources();
 }
 
@@ -1096,24 +1027,7 @@ function renderAdmin() {
 
     <div class="panel">
       <h3>公開設定</h3>
-      <table>
-        <tr>
-          <th>教材</th>
-          <th>状態</th>
-          <th>操作</th>
-        </tr>
-        ${currData.items.map(item => `
-          <tr>
-            <td>${item.title}</td>
-            <td>${item.visible ? "公開" : "非公開"}</td>
-            <td>
-              <button class="toggle" onclick="toggleItem('${item.id}')">
-                ${item.visible ? "非公開にする" : "公開する"}
-              </button>
-            </td>
-          </tr>
-        `).join("")}
-      </table>
+      <div class="notice">シミュレータと資料は、1つずつ公開・非公開を切り替えられます。非公開にしたものはゲストには表示されません。</div>
     </div>
 
     <div class="panel">
@@ -1181,35 +1095,34 @@ function renderAdmin() {
   `;
 }
 
+
 function renderSimulator() {
   const currData = getCurrentData();
+  const sims = role === "host" ? currData.simulators : currData.simulators.filter(sim => sim.visible !== false);
 
   let html = `
     <button class="back" onclick="go('home')">← 戻る</button>
     <h2 class="section">シミュレータ</h2>
   `;
 
-  if (currData.simulators.length === 0) {
-    html += `<p>シミュレータがまだ追加されていません。</p>`;
+  if (sims.length === 0) {
+    html += `<p>${role === "host" ? "シミュレータがまだ追加されていません。" : "公開されているシミュレータがありません。"}</p>`;
   } else {
-    currData.simulators.forEach((sim, idx) => {
+    sims.forEach((sim) => {
+      const idx = currData.simulators.indexOf(sim);
       html += `
         <div class="sim">
           <h3>${escapeHTML(sim.name)}</h3>
           <p>${escapeHTML(sim.desc)}</p>
-      `;
-      
-      if (sim.fileUrl) {
-        html += `<iframe src="${escapeHTML(sim.fileUrl)}" style="width:100%; height:500px; border:1px solid #ddd; border-radius:4px;"></iframe>`;
-      } else if (sim.fileContent) {
-        html += `<iframe srcdoc="${sim.fileContent.replace(/"/g, '&quot;')}" style="width:100%; height:500px; border:1px solid #ddd; border-radius:4px;"></iframe>`;
-      }
-      if (sim.fileUrl || sim.fileContent) {
-        html += `<button class="sim-open-button" onclick="openSimulator(${idx})">↗ シミュレータを別画面で開く</button>`;
-      }
-      
-      html += `
-          ${role === "host" ? `<button onclick="deleteSimulator(${idx})" style="background:#f0f0f0; color:var(--red); border:1px solid var(--red); margin-top:10px;">削除</button>` : ""}
+          ${sim.fileUrl ? `<iframe src="${escapeHTML(sim.fileUrl)}" style="width:100%; height:500px; border:1px solid #ddd; border-radius:4px;"></iframe>` : ""}
+          ${sim.fileContent ? `<iframe srcdoc="${sim.fileContent.replace(/"/g, '&quot;')}" style="width:100%; height:500px; border:1px solid #ddd; border-radius:4px;"></iframe>` : ""}
+          ${(sim.fileUrl || sim.fileContent) ? `<button class="sim-open-button" onclick="openSimulator(${idx})">↗ シミュレータを別画面で開く</button>` : ""}
+          ${role === "host" ? `
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px;">
+              <button class="toggle" onclick="toggleSimulatorVisibility(${idx})">${sim.visible === false ? "公開する" : "非公開にする"}</button>
+              <span style="font-size:12px; color:var(--ink-soft);">現在：${sim.visible === false ? "非公開" : "公開"}</span>
+              <button onclick="deleteSimulator(${idx})" style="background:#f0f0f0; color:var(--red); border:1px solid var(--red);">削除</button>
+            </div>` : ""}
         </div>
       `;
     });
@@ -1246,41 +1159,36 @@ function handleSimFileSelect() {
 }
 
 
-function renderPractice() {
-  $("main").innerHTML = `
-    <button class="back" onclick="go('home')">← 戻る</button>
-    <h2 class="section">練習問題</h2>
-    <div class="panel">
-      <p>ここに授業用の練習問題を追加できます。</p>
-    </div>
-  `;
-}
 
 function renderResources() {
   const currData = getCurrentData();
+  const resources = role === "host" ? currData.resources : currData.resources.filter(res => res.visible !== false);
 
   let html = `
     <button class="back" onclick="go('home')">← 戻る</button>
     <h2 class="section">資料</h2>
   `;
 
-  if (currData.resources.length === 0) {
-    html += `<p>資料がまだ追加されていません。</p>`;
+  if (resources.length === 0) {
+    html += `<p>${role === "host" ? "資料がまだ追加されていません。" : "公開されている資料がありません。"}</p>`;
   } else {
     html += `<ul class="resource-list">`;
-    currData.resources.forEach((res, i) => {
+    resources.forEach((res) => {
+      const i = currData.resources.indexOf(res);
       html += `
         <li class="resource-item">
           <div class="resource-info">
             <h3>${escapeHTML(res.name)}</h3>
             <p>${escapeHTML(res.desc)}</p>
-            ${res.link ? `<p style="margin-top: 5px;"><a href="${escapeHTML(res.link)}" target="_blank" rel="noopener">🔗 ${escapeHTML(res.link)}</a></p>` : ""}
-            ${(res.fileContent || res.fileUrl) ? `<div style="margin-top:8px;"><button class="open" onclick="downloadResourceFile(${i})">📎 ファイルを開く / 保存</button><div style="font-size:11px; color:#999; margin-top:4px;">${escapeHTML(res.fileName || "添付ファイル")}</div></div>` : ""}
+            ${res.link ? `<p style="margin-top: 5px;"><a href="${escapeHTML(res.link)}" target="_blank" rel="noopener">${escapeHTML(res.link)}</a></p>` : ""}
+            ${(res.fileContent || res.fileUrl) ? `<div style="margin-top:8px;"><button class="open" onclick="downloadResourceFile(${i})">ファイルを開く / 保存</button><div style="font-size:11px; color:#999; margin-top:4px;">${escapeHTML(res.fileName || "添付ファイル")}</div></div>` : ""}
             <p style="font-size: 11px; color: #999; margin-top: 3px;"><strong>追加日:</strong> ${escapeHTML(res.date)}</p>
           </div>
-          <div class="resource-actions">
-            ${role === "host" ? `<button class="delete-btn" onclick="deleteResource(${i})">削除</button>` : ""}
-          </div>
+          ${role === "host" ? `<div class="resource-actions" style="flex-wrap:wrap; align-items:center;">
+            <button class="toggle" onclick="toggleResourceVisibility(${i})">${res.visible === false ? "公開する" : "非公開にする"}</button>
+            <span style="font-size:11px; color:var(--ink-soft);">${res.visible === false ? "非公開" : "公開"}</span>
+            <button class="delete-btn" onclick="deleteResource(${i})">削除</button>
+          </div>` : ""}
         </li>
       `;
     });
@@ -1290,15 +1198,25 @@ function renderResources() {
   $("main").innerHTML = html;
 }
 
-async function toggleItem(id) {
+
+async function toggleSimulatorVisibility(idx) {
   const currData = getCurrentData();
-  currData.items = currData.items.map(item =>
-    item.id === id ? { ...item, visible: !item.visible } : item
-  );
+  const sim = currData.simulators[idx];
+  if (!sim) return;
+  sim.visible = sim.visible === false;
   const ok = await save();
   if (CLOUD_ENABLED && !ok) return;
-  renderNav();
-  render();
+  renderSimulator();
+}
+
+async function toggleResourceVisibility(idx) {
+  const currData = getCurrentData();
+  const res = currData.resources[idx];
+  if (!res) return;
+  res.visible = res.visible === false;
+  const ok = await save();
+  if (CLOUD_ENABLED && !ok) return;
+  renderResources();
 }
 
 async function saveNote() {
@@ -1328,7 +1246,7 @@ async function addSimulator() {
     if (CLOUD_ENABLED) {
       fileUrl = await uploadToCloud(file, `${subject}/simulators`);
     }
-    currData.simulators.push({ name, desc, fileContent: CLOUD_ENABLED ? "" : (simFileContent || ""), fileUrl, fileName: file.name, date: new Date().toLocaleDateString("ja-JP") });
+    currData.simulators.push({ name, desc, visible: true, fileContent: CLOUD_ENABLED ? "" : (simFileContent || ""), fileUrl, fileName: file.name, date: new Date().toLocaleDateString("ja-JP") });
     await save();
     $("simName").value = ""; $("simDesc").value = ""; $("simFileInput").value = ""; $("simFileSelected").textContent = ""; simFileContent = null;
     alert(CLOUD_ENABLED ? "シミュレータをクラウドに公開しました" : "シミュレータを追加しました（端末保存）");
@@ -1388,7 +1306,7 @@ async function addResource() {
   try {
     let fileUrl = "";
     if (file && CLOUD_ENABLED) fileUrl = await uploadToCloud(file, `${subject}/resources`);
-    currData.resources.push({ name, desc, link, fileContent: file && !CLOUD_ENABLED ? (resourceFileContent || "") : "", fileUrl, fileName: file ? file.name : "", date: new Date().toLocaleDateString("ja-JP") });
+    currData.resources.push({ name, desc, link, visible: true, fileContent: file && !CLOUD_ENABLED ? (resourceFileContent || "") : "", fileUrl, fileName: file ? file.name : "", date: new Date().toLocaleDateString("ja-JP") });
     await save();
     $("resName").value = ""; $("resDesc").value = ""; $("resLink").value = ""; $("resFileInput").value = ""; $("resFileSelected").textContent = ""; resourceFileContent = null; resourceFileName = "";
     alert(CLOUD_ENABLED ? "資料をクラウドに公開しました" : "資料を追加しました（端末保存）");
